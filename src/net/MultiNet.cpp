@@ -63,7 +63,7 @@ VIRTUAL int MultiNet::getOutputNumElements() const {
 VIRTUAL int MultiNet::getOutputPlanes() const {
     return trainables[0]->getOutputPlanes();
 }
-VIRTUAL int MultiNet::getOutputSize() const {
+VIRTUAL Dimensions MultiNet::getOutputSize() const {
     return trainables[0]->getOutputSize();
 }
 VIRTUAL LossLayerMaker *MultiNet::cloneLossLayerMaker() const {

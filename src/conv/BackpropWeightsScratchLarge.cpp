@@ -24,7 +24,7 @@ VIRTUAL BackpropWeightsScratchLarge::~BackpropWeightsScratchLarge() {
 VIRTUAL void BackpropWeightsScratchLarge::calcGradWeights(int batchSize, CLWrapper *gradOutputWrapper, CLWrapper *imagesWrapper, CLWrapper *gradWeightsWrapper, CLWrapper *gradBiasWrapper) {
     StatefulTimer::instance()->timeCheck("BackpropWeightsScratchLarge start");
 
-    int workgroupSize = 32 * (( square(dim.filterSize) + 32 - 1) / 32); // quantize to nearest 32
+    int workgroupSize = 32 * (( (dim.filterSize.height * dim.filterSize.width) + 32 - 1) / 32); // quantize to nearest 32
 //    int workgroupsize = std::max(32, square(dim.filterSize) ); // no point in wasting cores...
     int numWorkgroups = dim.inputPlanes * dim.numFilters;
     int globalSize = workgroupSize * numWorkgroups;
@@ -55,7 +55,7 @@ VIRTUAL void BackpropWeightsScratchLarge::calcGradWeights(int batchSize, CLWrapp
 BackpropWeightsScratchLarge::BackpropWeightsScratchLarge(EasyCL *cl, LayerDimensions dim) :
         BackpropWeights(cl, dim)
             {
-    if(square(dim.filterSize) > cl->getMaxWorkgroupSize()) {
+    if(dim.filterSize.height * dim.filterSize.width > cl->getMaxWorkgroupSize()) {
         throw runtime_error("cannot use BackpropWeightsScratchLarge, since filterSize * filterSize > maxworkgroupsize");
     }
 
@@ -67,7 +67,7 @@ BackpropWeightsScratchLarge::BackpropWeightsScratchLarge(EasyCL *cl, LayerDimens
 //    cout << "dim: " << dim << endl;
     std::string options = dim.buildOptionsString();
 
-    int localMemoryRequirementsFullImage = dim.inputSize * dim.inputSize * 4 + dim.outputSize * dim.outputSize * 4;
+    int localMemoryRequirementsFullImage = dim.inputSize.height * dim.inputSize.width * 4 + dim.outputSize.height * dim.outputSize.width * 4;
     int availableLocal = cl->getLocalMemorySize();
 //    cout << "localmemoryrequirementsfullimage: " << localMemoryRequirementsFullImage << endl;
 //    cout << "availablelocal: " << availableLocal << endl;
@@ -80,16 +80,16 @@ BackpropWeightsScratchLarge::BackpropWeightsScratchLarge(EasyCL *cl, LayerDimens
     numStripes = EasyCL::getNextPower2(numStripes);
 //    cout << "numStripes: " << numStripes << endl;
 
-    int inputStripeMarginRows = dim.filterSize - 1;
-    int inputStripeInnerNumRows = dim.inputSize / numStripes;
+    int inputStripeMarginRows = dim.filterSize.height - 1;
+    int inputStripeInnerNumRows = dim.inputSize.height / numStripes;
     int inputStripeOuterNumRows = inputStripeInnerNumRows + 2 * inputStripeMarginRows;
 
-    int inputStripeInnerSize = inputStripeInnerNumRows * dim.inputSize;
-    inputStripeOuterSize = inputStripeOuterNumRows * dim.inputSize;
-    int inputStripeMarginSize = inputStripeMarginRows * dim.inputSize;
+    int inputStripeInnerSize = inputStripeInnerNumRows * dim.inputSize.width;
+    inputStripeOuterSize = inputStripeOuterNumRows * dim.inputSize.width;
+    int inputStripeMarginSize = inputStripeMarginRows * dim.inputSize.width;
 
-    int outputStripeNumRows = (dim.outputSize + numStripes - 1) / numStripes;
-    outputStripeSize = outputStripeNumRows * dim.outputSize;
+    int outputStripeNumRows = (dim.outputSize.height + numStripes - 1) / numStripes;
+    outputStripeSize = outputStripeNumRows * dim.outputSize.width;
 
     // [[[cog
     // import cog_optionswriter
@@ -168,8 +168,8 @@ BackpropWeightsScratchLarge::BackpropWeightsScratchLarge(EasyCL *cl, LayerDimens
     "    const int workgroupId = get_group_id(0);\n"
     "    const int workgroupSize = get_local_size(0);\n"
     "\n"
-    "    const int filterRow = localId / gFilterSize;\n"
-    "    const int filterCol = localId % gFilterSize;\n"
+    "    const int filterRow = localId / gFilterWidth;\n"
+    "    const int filterCol = localId % gFilterWidth;\n"
     "\n"
     "    const int outPlane = workgroupId / gInputPlanes;\n"
     "    const int upstreamPlane = workgroupId % gInputPlanes;\n"
@@ -181,12 +181,12 @@ BackpropWeightsScratchLarge::BackpropWeightsScratchLarge(EasyCL *cl, LayerDimens
     "    float thisbiaschange = 0;\n"
     "#endif\n"
     "    const int numLoopsForImageStripe = (gInputStripeOuterSize + workgroupSize - 1) / workgroupSize;\n"
-    "    const int numLoopsForErrorStripe = (gOutputSizeSquared + workgroupSize - 1) / workgroupSize;\n"
+    "    const int numLoopsForErrorStripe = (gOutputArea + workgroupSize - 1) / workgroupSize;\n"
     "    for (int n = 0; n < batchSize; n++) {\n"
-    "        const int imageImageGlobalOffset = (n * gInputPlanes + upstreamPlane) * gInputSizeSquared;\n"
-    "        const int imageImageGlobalOffsetAfter = imageImageGlobalOffset + gInputSizeSquared;\n"
-    "        const int errorImageGlobalOffset = (n * gNumFilters + outPlane) * gOutputSizeSquared;\n"
-    "        const int errorImageGlobalOffsetAfter = errorImageGlobalOffset + gOutputSizeSquared;\n"
+    "        const int imageImageGlobalOffset = (n * gInputPlanes + upstreamPlane) * gInputArea;\n"
+    "        const int imageImageGlobalOffsetAfter = imageImageGlobalOffset + gInputArea;\n"
+    "        const int errorImageGlobalOffset = (n * gNumFilters + outPlane) * gOutputArea;\n"
+    "        const int errorImageGlobalOffsetAfter = errorImageGlobalOffset + gOutputArea;\n"
     "        for (int stripe = 0; stripe < gNumStripes; stripe++) {\n"
     "            const int imageStripeInnerOffset = imageImageGlobalOffset + stripe * gInputStripeInnerSize;\n"
     "            const int imageStripeOuterOffset = imageStripeInnerOffset - gInputStripeMarginSize;\n"
@@ -217,25 +217,25 @@ BackpropWeightsScratchLarge::BackpropWeightsScratchLarge(EasyCL *cl, LayerDimens
     "            barrier(CLK_LOCAL_MEM_FENCE);\n"
     "//            if (localId == 13) {\n"
     "//                for (int i = 0; i < 12; i++) {\n"
-    "//                    gradWeights[100 + stripe * 12 + i ] = _errorStripe[i * gOutputSize];\n"
+    "//                    gradWeights[100 + stripe * 12 + i ] = _errorStripe[i * gOutputWidth];\n"
     "//                }\n"
     "//                for (int i = 0; i < 20; i++) {\n"
-    "//                    gradWeights[200 + stripe * 20 + i ] = _imageStripe[i * gInputSize];\n"
+    "//                    gradWeights[200 + stripe * 20 + i ] = _imageStripe[i * gInputWidth];\n"
     "//                }\n"
     "//            }\n"
-    "            if (localId < gFilterSizeSquared) {\n"
+    "            if (localId < gFilterArea) {\n"
     "                for (int outRow = stripeOutRowStart; outRow < stripeOutRowEndExcl; outRow++) {\n"
-    "                    int upstreamRow = outRow - gMargin + filterRow;\n"
-    "                    for (int outCol = 0; outCol < gOutputSize; outCol++) {\n"
-    "                        int upstreamCol = outCol - gMargin + filterCol;\n"
+    "                    int upstreamRow = outRow - gMarginHeight + filterRow;\n"
+    "                    for (int outCol = 0; outCol < gOutputWidth; outCol++) {\n"
+    "                        int upstreamCol = outCol - gMarginWidth + filterCol;\n"
     "                        bool proceed =\n"
     "                            upstreamRow >= 0 && upstreamCol >= 0\n"
-    "                            && upstreamRow < gInputSize && upstreamCol < gInputSize\n"
-    "                            && outRow < gOutputSize;\n"
+    "                            && upstreamRow < gInputHeight && upstreamCol < gInputWidth\n"
+    "                            && outRow < gOutputHeight;\n"
     "                        if (proceed) {\n"
-    "                            int resultIndex = outRow * gOutputSize + outCol;\n"
+    "                            int resultIndex = outRow * gOutputWidth + outCol;\n"
     "                            float error = _errorStripe[resultIndex - stripe * gOutputStripeSize];\n"
-    "                            int upstreamDataIndex = upstreamRow * gInputSize + upstreamCol;\n"
+    "                            int upstreamDataIndex = upstreamRow * gInputWidth + upstreamCol;\n"
     "                            float upstreamResult = _imageStripe[upstreamDataIndex +  gInputStripeMarginSize\n"
     "                                        - stripe * gInputStripeInnerSize ];\n"
     "                            thiswchange += upstreamResult * error;\n"
@@ -248,12 +248,12 @@ BackpropWeightsScratchLarge::BackpropWeightsScratchLarge(EasyCL *cl, LayerDimens
     "            }\n"
     "        }\n"
     "    }\n"
-    "    if (localId < gFilterSizeSquared) {\n"
-    "        gradWeights[ workgroupId * gFilterSizeSquared + localId ] = learningRateMultiplier * thiswchange;\n"
-    "//        weightChanges[ workgroupId * gFilterSizeSquared + localId ] = workgroupId;\n"
+    "    if (localId < gFilterArea) {\n"
+    "        gradWeights[ workgroupId * gFilterArea + localId ] = learningRateMultiplier * thiswchange;\n"
+    "//        weightChanges[ workgroupId * gFilterArea + localId ] = workgroupId;\n"
     "    }\n"
     "#ifdef BIASED\n"
-    "    bool writeBias = upstreamPlane == 0 && filterRow == gMargin && filterCol == gMargin;\n"
+    "    bool writeBias = upstreamPlane == 0 && filterRow == gMarginHeight && filterCol == gMarginWidth;\n"
     "    if (writeBias) {\n"
     "        gradBiasWeights[outPlane] = learningRateMultiplier * thisbiaschange;\n"
     "    }\n"

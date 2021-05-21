@@ -44,9 +44,9 @@ VIRTUAL void InputLayer::printOutput() {
         std::cout << "InputLayer n " << n << ":" << std::endl;
         for(int plane = 0; plane < std::min(5, outputPlanes); plane++) {
             if(outputPlanes > 1) std::cout << "    plane " << plane << ":" << std::endl;
-            for(int i = 0; i < std::min(5, outputSize); i++) {
+            for(int i = 0; i < std::min(5, outputSize.height); i++) {
                 std::cout << "      ";
-                for(int j = 0; j < std::min(5, outputSize); j++) {
+                for(int j = 0; j < std::min(5, outputSize.width); j++) {
                     std::cout << getOutput(n, plane, i, j) << " ";
 //output[
 //                            n * numPlanes * imageSize*imageSize +
@@ -54,10 +54,10 @@ VIRTUAL void InputLayer::printOutput() {
 //                            i * imageSize +
 //                            j ] << " ";
                 }
-                if(outputSize > 5) std::cout << " ... ";
+                if(outputSize.height > 5) std::cout << " ... ";
                 std::cout << std::endl;
             }
-            if(outputSize > 5) std::cout << " ... " << std::endl;
+            if(outputSize.width > 5) std::cout << " ... " << std::endl;
         }
         if(outputPlanes > 5) std::cout << "   ... other planes ... " << std::endl;
     }
@@ -97,14 +97,14 @@ VIRTUAL void InputLayer::forward() {
 }
 //VIRTUAL void InputLayer::backward(float learningRate, float const *gradOutput) {
 //}
-VIRTUAL int InputLayer::getOutputSize() const {
+VIRTUAL Dimensions InputLayer::getOutputSize() const {
     return outputSize;
 }
 VIRTUAL int InputLayer::getOutputPlanes() const {
     return outputPlanes;
 }
 VIRTUAL int InputLayer::getOutputCubeSize() const {
-    return outputPlanes * outputSize * outputSize;
+    return outputPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL int InputLayer::getOutputNumElements() const {
     return batchSize * getOutputCubeSize();
@@ -113,7 +113,7 @@ VIRTUAL std::string InputLayer::toString() {
     return asString();
 }
 VIRTUAL std::string InputLayer::asString() const {
-    return std::string("") + "InputLayer{ outputPlanes=" + ::toString(outputPlanes) + " outputSize=" +  ::toString(outputSize) + " }";
+    return std::string("") + "InputLayer{ outputPlanes=" + ::toString(outputPlanes) + " outputHeight=" + ::toString(outputSize.height) + "outputWidth=" + ::toString(outputSize.width) + " }";
 }
 
 //template<>VIRTUAL std::string InputLayer<unsigned char>::asString() const {

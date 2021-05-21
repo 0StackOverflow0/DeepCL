@@ -46,10 +46,10 @@ VIRTUAL void ForwardByInputPlane::forward(int batchSize, CLWrapper *dataWrapper,
     kernel->input(dataWrapper);
     kernel->input(weightsWrapper);
     kernel->output(output1Wrapper);
-    kernel->localFloats(square(dim.inputSize) );
-    kernel->localFloats(square(dim.filterSize) * dim.numFilters);
+    kernel->localFloats(dim.inputSize.height * dim.inputSize.width);
+    kernel->localFloats(dim.filterSize.height * dim.filterSize.width * dim.numFilters);
 
-    int workgroupsize = std::max(32, dim.numFilters * dim.outputSize); // no point in wasting threads....
+    int workgroupsize = std::max(32, dim.numFilters * dim.outputSize.width); // no point in wasting threads....
     while(workgroupsize > cl->getMaxWorkgroupSize()) {
         workgroupsize >>= 1;
     }
@@ -68,18 +68,18 @@ VIRTUAL void ForwardByInputPlane::forward(int batchSize, CLWrapper *dataWrapper,
 //    }
 
     reduceSegments->in(batchSize * dim.numFilters * dim.outputSizeSquared)->in(dim.numInputPlanes)->in(output1Wrapper)->out(outputWrapper);
-    maxglobalId = batchSize * dim.numFilters * dim.outputSize * dim.outputSize;
+    maxglobalId = batchSize * dim.numFilters * dim.outputSize.height * dim.outputSize.width;
     numWorkgroups = (maxglobalId + maxWorkgroupSize - 1) / maxWorkgroupSize;
     reduceSegments->run_1d(numWorkgroups * maxWorkgroupSize, maxWorkgroupSize);
     cl->finish();
     StatefulTimer::timeCheck("ForwardByInputPlane::forward after reduce over inputplanes");
 
     if(dim.biased) {
-        repeatedAdd->in(batchSize * dim.numFilters * dim.outputSize * dim.outputSize)
+        repeatedAdd->in(batchSize * dim.numFilters * dim.outputSize.height * dim.outputSize.width)
             ->in(dim.numFilters)
-            ->in(dim.outputSize * dim.outputSize)
+            ->in(dim.outputSize.height * dim.outputSize.width)
             ->inout(outputWrapper)->in(biasWrapper);
-        maxglobalId = batchSize * dim.numFilters * dim.outputSize * dim.outputSize;
+        maxglobalId = batchSize * dim.numFilters * dim.outputSize.height * dim.outputSize.width;
         numWorkgroups = (maxglobalId + maxWorkgroupSize - 1) / maxWorkgroupSize;
         repeatedAdd->run_1d(numWorkgroups * maxWorkgroupSize, maxWorkgroupSize);
         cl->finish();
@@ -137,7 +137,7 @@ ForwardByInputPlane::ForwardByInputPlane(EasyCL *cl, LayerDimensions dim) :
     "      global const float *images, global const float *filters,\n"
     "    global float *output,\n"
     "    local float *_inputPlane, local float *_filterPlanes) {\n"
-    "//    const int evenPadding = gFilterSize % 2 == 0 ? 1 : 0;\n"
+    "//    const int evenPadding = gFilterWidth % 2 == 0 && gFilterHeight % 2 == 0 ? 1 : 0;\n"
     "\n"
     "    const int globalId = get_global_id(0);\n"
     "    const int workgroupId = get_group_id(0);\n"
@@ -145,22 +145,22 @@ ForwardByInputPlane::ForwardByInputPlane(EasyCL *cl, LayerDimensions dim) :
     "    const int localId = get_local_id(0);\n"
     "\n"
     "    const int inputPlaneId = workgroupId;\n"
-    "    const int numLoops = (gNumFilters * gOutputSize + workgroupSize - 1) / workgroupSize;\n"
-    "    const int numFilterCopyLoops = (gFilterSizeSquared + gOutputSize - 1) / gOutputSize;\n"
-    "    const int numImageCopyLoops = (gInputSizeSquared + workgroupSize - 1) / workgroupSize;\n"
+    "    const int numLoops = (gNumFilters * gOutputWidth + workgroupSize - 1) / workgroupSize;\n"
+    "    const int numFilterCopyLoops = (gFilterArea + gOutputWidth - 1) / gOutputWidth;\n"
+    "    const int numImageCopyLoops = (gInputArea + workgroupSize - 1) / workgroupSize;\n"
     "    for (int loop = 0; loop < numLoops; loop++) {\n"
     "        const int loopLocalId = localId + loop * workgroupSize;\n"
-    "        const int filterId = loopLocalId / gOutputSize;\n"
-    "        const int outRow = loopLocalId % gOutputSize;\n"
+    "        const int filterId = loopLocalId / gOutputWidth;\n"
+    "        const int outRow = loopLocalId % gOutputWidth;\n"
     "\n"
-    "        // copy down our filter, we have gOutputSize threads to do this\n"
+    "        // copy down our filter, we have gOutputWidth threads to do this\n"
     "        global float const *globalFilterPlane = filters +\n"
-    "            (filterId * gNumInputPlanes + inputPlaneId) * gFilterSizeSquared;\n"
-    "        local float *_localFilterPlane = _filterPlanes + filterId * gFilterSizeSquared;\n"
+    "            (filterId * gNumInputPlanes + inputPlaneId) * gFilterArea;\n"
+    "        local float *_localFilterPlane = _filterPlanes + filterId * gFilterArea;\n"
     "        barrier(CLK_LOCAL_MEM_FENCE);\n"
     "        for (int i = 0; i < numFilterCopyLoops; i++) {\n"
-    "            const int offset = i * gOutputSize + outRow;\n"
-    "            bool process = filterId < gNumFilters && offset < gFilterSizeSquared;\n"
+    "            const int offset = i * gOutputWidth + outRow;\n"
+    "            bool process = filterId < gNumFilters && offset < gFilterArea;\n"
     "            if (process) {\n"
     "                _localFilterPlane[ offset ] = globalFilterPlane[ offset ];\n"
     "            }\n"
@@ -170,33 +170,33 @@ ForwardByInputPlane::ForwardByInputPlane(EasyCL *cl, LayerDimensions dim) :
     "            // copy down our imageplane, we have workgroupSize threads to do this\n"
     "            barrier(CLK_LOCAL_MEM_FENCE);\n"
     "            global float const *globalImagePlane = images +\n"
-    "                (n * gNumInputPlanes + inputPlaneId) * gInputSizeSquared;\n"
+    "                (n * gNumInputPlanes + inputPlaneId) * gInputArea;\n"
     "            for (int i = 0; i< numImageCopyLoops; i++) {\n"
     "                const int offset = i * workgroupSize + localId;\n"
-    "                if (offset < gInputSizeSquared) {\n"
+    "                if (offset < gInputArea) {\n"
     "                    _inputPlane[ offset ] = globalImagePlane[ offset ];\n"
     "                }\n"
     "            }\n"
     "            barrier(CLK_LOCAL_MEM_FENCE);\n"
     "            // calc output for each [outrow][outcol]\n"
     "            bool filterPlaneOk = filterId < gNumFilters;\n"
-    "            for (int outCol = 0; outCol < gOutputSize; outCol++) {\n"
+    "            for (int outCol = 0; outCol < gOutputWidth; outCol++) {\n"
     "                float sum = 0;\n"
-    "                for (int filterRow = 0; filterRow < gFilterSize; filterRow++) {\n"
+    "                for (int filterRow = 0; filterRow < gFilterHeight; filterRow++) {\n"
     "                    int inRow = outRow + filterRow;\n"
     "                    #if gPadZeros == 1\n"
-    "                        inRow -= gHalfFilterSize;\n"
+    "                        inRow -= gHalfFilterHeight;\n"
     "                    #endif\n"
-    "                    bool rowOk = filterPlaneOk && inRow >= 0 && inRow < gInputSize;\n"
-    "                    for (int filterCol = 0; filterCol < gFilterSize; filterCol++) {\n"
+    "                    bool rowOk = filterPlaneOk && inRow >= 0 && inRow < gInputHeight;\n"
+    "                    for (int filterCol = 0; filterCol < gFilterWidth; filterCol++) {\n"
     "                        int inCol = outCol + filterCol;\n"
     "                        #if gPadZeros == 1\n"
-    "                            inCol -= gHalfFilterSize;\n"
+    "                            inCol -= gHalfFilterWidth;\n"
     "                        #endif\n"
-    "                        bool process = rowOk && inCol >= 0 && inCol < gInputSize;\n"
+    "                        bool process = rowOk && inCol >= 0 && inCol < gInputWidth;\n"
     "                        if (process) {\n"
-    "                            float imageValue = _inputPlane[ inRow * gInputSize + inCol ];\n"
-    "                            float filterValue = _localFilterPlane[ filterRow * gFilterSize + filterCol ];\n"
+    "                            float imageValue = _inputPlane[ inRow * gInputWidth + inCol ];\n"
+    "                            float filterValue = _localFilterPlane[ filterRow * gFilterWidth + filterCol ];\n"
     "                            sum += imageValue * filterValue;\n"
     "                        }\n"
     "                    }\n"
@@ -205,8 +205,8 @@ ForwardByInputPlane::ForwardByInputPlane(EasyCL *cl, LayerDimensions dim) :
     "                    // [n][filterId][outRow][outCol][inputPlane]\n"
     "                    int resultIndex = (( (n\n"
     "                        * gNumFilters + filterId)\n"
-    "                        * gOutputSize + outRow)\n"
-    "                        * gOutputSize + outCol)\n"
+    "                        * gOutputHeight + outRow)\n"
+    "                        * gOutputWidth + outCol)\n"
     "                        * gNumInputPlanes + inputPlaneId;\n"
     "                    output[resultIndex] = sum;\n"
     "                    //if (globalId == 2) output[0] = resultIndex;\n"

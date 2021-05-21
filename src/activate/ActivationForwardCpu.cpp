@@ -20,7 +20,7 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-ActivationForwardCpu::ActivationForwardCpu(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn) :
+ActivationForwardCpu::ActivationForwardCpu(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn) :
         ActivationForward(cl, numPlanes, inputSize, fn) {
 }
 VIRTUAL void ActivationForwardCpu::forward(int batchSize, CLWrapper *inputWrapper, CLWrapper *outputWrapper) {
@@ -44,7 +44,7 @@ VIRTUAL void ActivationForwardCpu::forward(int batchSize, float *input, float *o
 //    float *output = new float[ getOutputNumElements(batchSize) ];
 //    cout << "ActivationForwardCpu::forward(float *)" << endl;
     StatefulTimer::instance()->timeCheck("ActivationForwardCpu::forward start");
-    int totalLinearSize = batchSize * numPlanes * inputSize * inputSize;
+    int totalLinearSize = batchSize * numPlanes * inputSize.height * inputSize.width;
     for(int i = 0; i < totalLinearSize; i++) {
         output[i] = fn->calc(input[i]);
     }

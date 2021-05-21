@@ -30,8 +30,7 @@ VIRTUAL float *BackwardCpu::backward(int batchSize, float *inputs,
 
 //        Timer timer;
     StatefulTimer::instance()->timeCheck("BackwardCpu start");
-    const int halfFilterSize = dim.filterSize >> 1;
-    const int margin = dim.padZeros ? halfFilterSize : 0;
+    const Dimensions margin = dim.padZeros ? dim.halfFilterSize : 0;
     // handle lower layer...
     // errors for upstream look like [n][inPlane][inRow][inCol]
     // need to aggregate over: [outPlane][outRow][outCol] (?)
@@ -45,37 +44,38 @@ VIRTUAL float *BackwardCpu::backward(int batchSize, float *inputs,
     // errors are provider per [n][inPlane][inRow][inCol]
     for(int n = 0; n < batchSize; n++) {
         for(int upstreamPlane = 0; upstreamPlane < dim.inputPlanes; upstreamPlane++) {
-            for(int upstreamRow = 0; upstreamRow < dim.inputSize; upstreamRow++) {
-                int minFilterRow = std::max(0, upstreamRow + margin - (dim.outputSize - 1));
-                int maxFilterRow = std::min(dim.filterSize - 1, upstreamRow + margin);
-                for(int upstreamCol = 0; upstreamCol < dim.inputSize; upstreamCol++) {
+            for(int upstreamRow = 0; upstreamRow < dim.inputSize.height; upstreamRow++) {
+                int minFilterRow = std::max(0, upstreamRow + margin.height - (dim.outputSize.height - 1));
+                int maxFilterRow = std::min(dim.filterSize.height - 1, upstreamRow + margin.height);
+                for(int upstreamCol = 0; upstreamCol < dim.inputSize.width; upstreamCol++) {
                     float sumWeightTimesGradOutput = 0;
                     // aggregate over [outPlane][outRow][outCol]
-                    int minFilterCol = std::max(0, upstreamCol + margin - (dim.outputSize -1));
-                    int maxFilterCol = std::min(dim.filterSize - 1, upstreamCol + margin);
+                    int minFilterCol = std::max(0, upstreamCol + margin.width - (dim.outputSize.width - 1));
+                    int maxFilterCol = std::min(dim.filterSize.width - 1, upstreamCol + margin.width);
                     for(int outPlane = 0; outPlane < dim.numFilters; outPlane++) {
                         for(int filterRow = minFilterRow; filterRow <= maxFilterRow; filterRow++) {
-                            int outRow = upstreamRow + margin - filterRow;
+                            int outRow = upstreamRow + margin.height - filterRow;
                             for(int filterCol = minFilterCol; filterCol <= maxFilterCol; filterCol++) {
-                                int outCol = upstreamCol + margin - filterCol;
+                                int outCol = upstreamCol + margin.width - filterCol;
                                 int resultIndex = (( n 
                                     * dim.numFilters + outPlane)
-                                    * dim.outputSize + outRow)
-                                    * dim.outputSize + outCol;
+                                    * dim.outputSize.height + outRow)
+                                    * dim.outputSize.width + outCol;
                                 float thisGradOutput = gradOutput[resultIndex];
                                 int thisWeightIndex = (( outPlane 
                                     * dim.inputPlanes + upstreamPlane)
-                                    * dim.filterSize + filterRow)
-                                    * dim.filterSize + filterCol;
+                                    * dim.filterSize.height + filterRow)
+                                    * dim.filterSize.width + filterCol;
                                 float thisWeight = weights[thisWeightIndex];
+//                                std::cout << "gradOutput[" << resultIndex << "] = " << thisGradOutput << std::endl;
                                 sumWeightTimesGradOutput += thisWeight * thisGradOutput;
                             }
                         }
                     }
                     int inputIndex = (( n
                         * dim.inputPlanes + upstreamPlane)
-                        * dim.inputSize + upstreamRow)
-                        * dim.inputSize + upstreamCol;
+                        * dim.inputSize.height + upstreamRow)
+                        * dim.inputSize.width + upstreamCol;
                     gradInput[inputIndex] = sumWeightTimesGradOutput; // * activationDerivativeUpstream;
                 }
             }

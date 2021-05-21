@@ -11,10 +11,11 @@ inline int square(int value) {
 
 class DeepCL_EXPORT LayerDimensions {
 public:
-    int inputPlanes, inputSize, numFilters, filterSize, outputSize;
-    bool padZeros, isEven;
+    Dimensions inputSize, outputSize, filterSize;
+    int inputPlanes, numFilters;
+    bool padZeros;
     bool biased;
-    int skip;
+    int skip, stride, isEven;
 
     int inputCubeSize;
     int filtersSize;
@@ -25,13 +26,13 @@ public:
     int filterSizeSquared;
     int inputSizeSquared;
 
-    int halfFilterSize;
+    Dimensions halfFilterSize;
 
     LayerDimensions() {
         memset(this, 0, sizeof(LayerDimensions) );
     }
-    LayerDimensions(int inputPlanes, int inputSize, 
-                int numFilters, int filterSize, 
+    LayerDimensions(int inputPlanes, Dimensions inputSize, 
+                int numFilters, Dimensions filterSize,
                 bool padZeros, bool biased) :
             inputPlanes(inputPlanes),
             inputSize(inputSize),
@@ -55,7 +56,7 @@ public:
         deriveOthers();
         return *this;
     }
-    LayerDimensions &setInputSize(int inputSize) {
+    LayerDimensions &setInputSize(Dimensions inputSize) {
         this->inputSize = inputSize;
         deriveOthers();
         return *this;
@@ -65,12 +66,17 @@ public:
         deriveOthers();
         return *this;
     }
+    LayerDimensions &setFilterStride(int stride) {
+        this->stride = stride;
+        deriveOthers();
+        return *this;
+    }
     LayerDimensions &setNumFilters(int numFilters) {
         this->numFilters = numFilters;
         deriveOthers();
         return *this;
     }
-    LayerDimensions &setFilterSize(int filterSize) {
+    LayerDimensions &setFilterSize(Dimensions filterSize) {
         this->filterSize = filterSize;
         deriveOthers();
         return *this;

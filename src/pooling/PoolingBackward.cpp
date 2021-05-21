@@ -23,13 +23,13 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-STATIC PoolingBackward *PoolingBackward::instance(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) {
+STATIC PoolingBackward *PoolingBackward::instance(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) {
     return new PoolingBackwardGpuNaive(cl, padZeros, numPlanes, inputSize, poolingSize);
 }
-STATIC PoolingBackward *PoolingBackward::instanceForTest(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) {
+STATIC PoolingBackward *PoolingBackward::instanceForTest(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) {
     return new PoolingBackwardCpu(cl, padZeros, numPlanes, inputSize, poolingSize);
 }
-STATIC PoolingBackward *PoolingBackward::instanceSpecific(int idx, EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) {
+STATIC PoolingBackward *PoolingBackward::instanceSpecific(int idx, EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) {
     if(idx == 0) {
         return new PoolingBackwardCpu(cl, padZeros, numPlanes, inputSize, poolingSize);
     }
@@ -38,23 +38,24 @@ STATIC PoolingBackward *PoolingBackward::instanceSpecific(int idx, EasyCL *cl, b
     }
     throw runtime_error("PoolingBackward::instanceSpecific, idx not known: " + toString(idx) );
 }
-PoolingBackward::PoolingBackward(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) :
+PoolingBackward::PoolingBackward(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) :
         cl(cl),
         padZeros(padZeros),
         numPlanes(numPlanes),
         inputSize(inputSize),
         poolingSize(poolingSize),
 //        poolingSizeSquared(poolingSize * poolingSize),
-        outputSize(padZeros ? (inputSize + poolingSize - 1) / poolingSize : inputSize / poolingSize) {
+        outputSize(padZeros ? (inputSize + (poolingSize - 1)) / poolingSize : inputSize / poolingSize) {
 //    if(inputSize % poolingSize != 0) {
 //        throw runtime_error("inputSize should be an exact multiple of poolingsize: " + toString(inputSize) + " " + toString(poolingSize) );
 //    }
+    Dimensions output( inputSize / poolingSize);
 }
 VIRTUAL int PoolingBackward::getInputNumElements(int batchSize) {
-    return batchSize * numPlanes * inputSize * inputSize;
+    return batchSize * numPlanes * inputSize.height * inputSize.width;
 }
 VIRTUAL int PoolingBackward::getOutputNumElements(int batchSize) {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL void PoolingBackward::backward(int batchSize, float *gradOutput, int *selectors, float *gradInput) {
 //    cout << "PoolingBackward::backward(float *)" << endl;

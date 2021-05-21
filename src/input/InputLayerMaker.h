@@ -22,7 +22,7 @@ PUBLICAPI
 class DeepCL_EXPORT InputLayerMaker : public LayerMaker2 {
 public:
     int _numPlanes;
-    int _imageSize;
+    Dimensions _imageSize;
     PUBLICAPI InputLayerMaker() :
 //            LayerMaker(net, 0),
             _numPlanes(0),
@@ -32,7 +32,7 @@ public:
         this->_numPlanes = _numPlanes;
         return this;
     }    
-    PUBLICAPI InputLayerMaker *imageSize(int _imageSize) {
+    PUBLICAPI InputLayerMaker *imageSize(Dimensions _imageSize) {
         this->_imageSize = _imageSize;
         return this;
     }    

@@ -22,13 +22,14 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
+
 PoolingLayer::PoolingLayer(EasyCL *cl, Layer *previousLayer, PoolingMaker *maker) :
         Layer(previousLayer, maker),
         padZeros(maker->_padZeros),
         numPlanes (previousLayer->getOutputPlanes()),
         inputSize(previousLayer->getOutputSize()),
         poolingSize(maker->_poolingSize),
-        outputSize(maker->_padZeros ? (previousLayer->getOutputSize() + maker->_poolingSize - 1) / maker->_poolingSize : previousLayer->getOutputSize() / maker->_poolingSize),
+        outputSize(maker->_padZeros ? (previousLayer->getOutputSize() + ( maker->_poolingSize - 1 )) / maker->_poolingSize : previousLayer->getOutputSize() / maker->_poolingSize),
         cl(cl),
         output(0),
         selectors(0),
@@ -111,7 +112,7 @@ VIRTUAL void PoolingLayer::setBatchSize(int batchSize) {
     gradInputWrapper->createOnDevice();
 }
 VIRTUAL int PoolingLayer::getOutputNumElements() {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL float *PoolingLayer::getOutput() {
     if(outputWrapper->isDeviceDirty()) {
@@ -125,13 +126,13 @@ VIRTUAL bool PoolingLayer::needsBackProp() {
 }
 VIRTUAL int PoolingLayer::getOutputNumElements() const {
 //    int outputSize = inputSize / poolingSize;
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
-VIRTUAL int PoolingLayer::getOutputSize() const {
+VIRTUAL Dimensions PoolingLayer::getOutputSize() const {
     return outputSize;
 }
 VIRTUAL int PoolingLayer::getOutputCubeSize() const {
-    return numPlanes * outputSize * outputSize;
+    return numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL int PoolingLayer::getOutputPlanes() const {
     return numPlanes;
@@ -247,7 +248,7 @@ VIRTUAL void PoolingLayer::backward() {
     }
 }
 VIRTUAL std::string PoolingLayer::asString() const {
-    return "PoolingLayer{ inputPlanes=" + toString(numPlanes) + " inputSize=" + toString(inputSize) + " poolingSize=" + toString(poolingSize) + " }";
+    return "PoolingLayer{ inputPlanes=" + toString(numPlanes) + " inputHeight=" + toString(inputSize.height) + " inputWidth=" + toString(inputSize.width) + " poolingSize=" + toString(poolingSize) + " }";
 }
 
 

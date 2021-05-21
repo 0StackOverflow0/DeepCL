@@ -33,14 +33,14 @@ VIRTUAL void ActivationBackwardGpuNaive::backward(int batchSize, CLWrapper *inpu
 
     StatefulTimer::instance()->timeCheck("ActivationBackwardGpuNaive::backward start");
 
-    int globalSize = batchSize * numPlanes * inputSize * inputSize;
+    int globalSize = batchSize * numPlanes * inputSize.height * inputSize.width;
     int workgroupSize = 64;
     int numWorkgroups = (globalSize + workgroupSize - 1) / workgroupSize;
-    kernel->in(batchSize * numPlanes * inputSize * inputSize)
+    kernel->in(batchSize * numPlanes * inputSize.height * inputSize.width)
           ->in(inputWrapper)
           ->in(gradOutputWrapper)
           ->out(gradInputWrapper);
-    globalSize = batchSize * numPlanes * outputSize * outputSize;
+    globalSize = batchSize * numPlanes * outputSize.height * outputSize.width;
     workgroupSize = 64;
     numWorkgroups = (globalSize + workgroupSize - 1) / workgroupSize;
     kernel->run_1d(numWorkgroups * workgroupSize, workgroupSize);
@@ -48,15 +48,17 @@ VIRTUAL void ActivationBackwardGpuNaive::backward(int batchSize, CLWrapper *inpu
 
     StatefulTimer::instance()->timeCheck("ActivationBackwardGpuNaive::backward end");
 }
-ActivationBackwardGpuNaive::ActivationBackwardGpuNaive(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn) :
+ActivationBackwardGpuNaive::ActivationBackwardGpuNaive(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn) :
         ActivationBackward(cl, numPlanes, inputSize, fn) {
 //    std::string options = "-D " + fn->getDefineName();
     string options = "";
     options += " -D gNumPlanes=" + toString(numPlanes);
-    options += " -D gInputSize=" + toString(inputSize);
-    options += " -D gInputSizeSquared=" + toString(inputSize * inputSize);
-    options += " -D gOutputSize=" + toString(outputSize);
-    options += " -D gOutputSizeSquared=" + toString(outputSize * outputSize);
+    options += " -D gInputWidth=" + toString(inputSize.width);
+    options += " -D gInputHeight=" + toString(inputSize.height);
+    options += " -D gInputArea=" + toString(inputSize.height * inputSize.width);
+    options += " -D gOutputWidth=" + toString(outputSize.width);
+    options += " -D gOutputHeight=" + toString(outputSize.height);
+    options += " -D gOutputArea=" + toString(outputSize.height * outputSize.width);
     options += string(" -D ") + fn->getDefineName();
 
     // [[[cog

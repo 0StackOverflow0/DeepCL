@@ -11,6 +11,7 @@
 #include "DeepCL.h"
 //#include "test/Sampler.h"  // TODO: REMOVE THIS
 #include "clblas/ClBlasInstance.h"
+#include "train.h"
 
 using namespace std;
 
@@ -157,15 +158,15 @@ void go(Config config) {
 
     int Ntrain;
     int Ntest;
-    int numPlanes;
-    int imageSize;
+    long numPlanes;
+    long imageSize;
 
     float *trainData = 0;
     float *testData = 0;
     int *trainLabels = 0;
     int *testLabels = 0;
 
-    int trainAllocateN = 0;
+    long trainAllocateN = 0;
     int testAllocateN = 0;
 
     if(config.dumpTimings) {
@@ -187,7 +188,8 @@ void go(Config config) {
     } else {
         trainAllocateN = Ntrain;
     }
-    trainData = new float[ (long)trainAllocateN * numPlanes * imageSize * imageSize ];
+    long trainDataSize = trainAllocateN * numPlanes * imageSize * imageSize;
+    trainData = new float[trainDataSize];
     trainLabels = new int[trainAllocateN];
     if(!config.loadOnDemand && Ntrain > 0) {
         trainLoader.load(trainData, trainLabels, 0, Ntrain);
@@ -203,7 +205,8 @@ void go(Config config) {
     } else {
         testAllocateN = Ntest;
     }
-    testData = new float[ (long)testAllocateN * numPlanes * imageSize * imageSize ];
+    long testDataSize = testAllocateN * numPlanes * imageSize * imageSize;
+    testData = new float[testDataSize];
     testLabels = new int[testAllocateN]; 
     if(!config.loadOnDemand && Ntest > 0) {
         testLoader.load(testData, testLabels, 0, Ntest);

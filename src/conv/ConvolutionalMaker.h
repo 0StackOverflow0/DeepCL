@@ -19,9 +19,10 @@ PUBLICAPI
 class DeepCL_EXPORT ConvolutionalMaker : public LayerMaker2 {
 public:
     int _numFilters;
-    int _filterSize;
+    Dimensions _filterSize;
     bool _padZeros;
     bool _biased;
+    int _stride;
     WeightsInitializer *_weightsInitializer;
 
     PUBLICAPI ConvolutionalMaker() :
@@ -29,6 +30,7 @@ public:
             _filterSize(0),
             _padZeros(false),
             _biased(true),
+            _stride(1),
             _weightsInitializer(new OriginalInitializer()) { // will leak slightly, but hopefully not much
     }
     PUBLICAPI static ConvolutionalMaker *instance() {
@@ -42,7 +44,7 @@ public:
         this->_numFilters = numFilters;
         return this;
     }    
-    PUBLICAPI ConvolutionalMaker *filterSize(int filterSize) {
+    PUBLICAPI ConvolutionalMaker *filterSize(Dimensions filterSize) {
         this->_filterSize = filterSize;
         return this;
     }    
@@ -62,6 +64,10 @@ public:
         this->_biased = _biased;
         return this;
     }    
+    PUBLICAPI ConvolutionalMaker* stride(int stride) {
+        this->_stride = stride;
+        return this;
+    }
     virtual ConvolutionalMaker *clone() const {
         return new ConvolutionalMaker(*this); // this will copy the activationfunction pointer too
     }

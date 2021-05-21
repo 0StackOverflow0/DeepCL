@@ -5,9 +5,10 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
+#include "DeepCLDllExport.h"
 
 class PatchExtractor {
 public:
-    static void extractPatch(int n, int numPlanes, int imageSize, int patchSize, int patchRow, int patchCol, float *source, float *destination);
+    static void extractPatch(int n, int numPlanes, Dimensions imageSize, Dimensions patchSize, int patchRow, int patchCol, float *source, float *destination);
 };
 

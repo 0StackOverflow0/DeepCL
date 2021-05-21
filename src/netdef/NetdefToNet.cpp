@@ -118,7 +118,7 @@ STATIC bool NetdefToNet::parseSubstring(WeightsInitializer *weightsInitializer, 
         int numFilters = atoi(splitConvDef[0]);
         vector<string> splitConvDef1 = split(splitConvDef[1], "z");
         int filterSize = atoi(splitConvDef1[0]);
-        int skip = 0;
+        int skip = 0, stride = 1;
         ActivationFunction *fn = 0;
         bool padZeros = splitConvDef1.size() == 2 ? true : false;
 
@@ -132,6 +132,10 @@ STATIC bool NetdefToNet::parseSubstring(WeightsInitializer *weightsInitializer, 
                 if(optionName == "skip") {
                     skip = atoi(optionValue);
                     cout << "got skip: " << skip << endl;
+                }
+                if (optionName == "stride") {
+                    stride = atoi(optionValue);
+                    cout << "got stride: " << stride << endl;
                 }
             } else if(splitOptionDef.size() == 1) {
                 if(optionName == "tanh") {
@@ -157,7 +161,7 @@ STATIC bool NetdefToNet::parseSubstring(WeightsInitializer *weightsInitializer, 
                 return false;
             }
         }
-        net->addLayer(ConvolutionalMaker::instance()->numFilters(numFilters)->filterSize(filterSize)->padZeros(padZeros)->biased()->weightsInitializer(weightsInitializer) );
+        net->addLayer(ConvolutionalMaker::instance()->numFilters(numFilters)->filterSize(filterSize)->padZeros(padZeros)->biased()->stride(stride)->weightsInitializer(weightsInitializer) );
         if(fn != 0) {
             net->addLayer(ActivationMaker::instance()->fn(fn) );
         }

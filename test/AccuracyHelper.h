@@ -23,7 +23,7 @@ public:
                    bestCount++;
                 }
             }
-//            cout << "expected: " << labels[n] << " got " << bestIndex << endl;
+//            cout << "expected: " << labels[n] << " got " << bestIndex << " and " << bestCount << endl;
             if( bestIndex == labels[n] && bestCount == 1 ) {
                 correct++;
             }

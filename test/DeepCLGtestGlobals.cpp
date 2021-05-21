@@ -26,3 +26,9 @@ EasyCL *DeepCLGtestGlobals_createEasyCL() {
     }
 }
 
+
+EasyCL* DeepCLGtestGlobals_createEasyCL_Cpu() {
+    EasyCL* cl = EasyCL::createForIndexedDevice(0);
+    // cout << "got cl, returning..." << endl;
+    return cl;
+}

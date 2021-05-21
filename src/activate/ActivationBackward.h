@@ -20,23 +20,23 @@ public:
     EasyCL *cl;
 
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
     ActivationFunction const *fn;
 
-    const int outputSize;
+    const Dimensions outputSize;
 
     virtual ~ActivationBackward() {}
     inline int getInputIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * inputSize + row)
-            * inputSize + col;
+            * inputSize.height + row)
+            * inputSize.width + col;
     }
     inline int getResultIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * outputSize + row)
-            * outputSize + col;
+            * outputSize.height + row)
+            * outputSize.width + col;
     }
 
     // [[[cog
@@ -44,10 +44,10 @@ public:
     // cog_addheaders.add()
     // ]]]
     // generated, using cog:
-    STATIC ActivationBackward *instance(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const *fn);
-    STATIC ActivationBackward *instanceForTest(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const *fn);
-    STATIC ActivationBackward *instanceSpecific(int idx, EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const *fn);
-    ActivationBackward(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const *fn);
+    STATIC ActivationBackward *instance(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const *fn);
+    STATIC ActivationBackward *instanceForTest(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const *fn);
+    STATIC ActivationBackward *instanceSpecific(int idx, EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const *fn);
+    ActivationBackward(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const *fn);
     VIRTUAL int getInputNumElements(int batchSize);
     VIRTUAL int getOutputNumElements(int batchSize);
     VIRTUAL void backward(int batchSize, float *inputs, float *gradOutput, float *gradInput);

@@ -30,11 +30,11 @@ VIRTUAL void DropoutForwardGpuNaive::forward(int batchSize, CLWrapper *masksWrap
 //    cout << StatefulTimer::instance()->prefix << "DropoutForwardGpuNaive::forward(CLWrapper *)" << endl;
     StatefulTimer::instance()->timeCheck("DropoutForwardGpuNaive::forward start");
 
-    kernel  ->input(batchSize * numPlanes * outputSize * outputSize)
+    kernel  ->input(batchSize * numPlanes * outputSize.height * outputSize.width)
             ->input(masksWrapper)
             ->input(inputWrapper)
             ->output(outputWrapper);
-    int globalSize = batchSize * numPlanes * outputSize * outputSize;
+    int globalSize = batchSize * numPlanes * outputSize.height * outputSize.width;
     int workgroupsize = cl->getMaxWorkgroupSize();
     globalSize = (( globalSize + workgroupsize - 1) / workgroupsize) * workgroupsize;
 //    cout << "DropoutForwardGpuNaive::forward batchsize=" << batchSize << " g=" << globalSize << " w=" << workgroupsize << endl;
@@ -46,13 +46,15 @@ VIRTUAL void DropoutForwardGpuNaive::forward(int batchSize, CLWrapper *masksWrap
 
     StatefulTimer::instance()->timeCheck("DropoutForwardGpuNaive::forward end");
 }
-DropoutForwardGpuNaive::DropoutForwardGpuNaive(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) :
+DropoutForwardGpuNaive::DropoutForwardGpuNaive(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) :
         DropoutForward(cl, numPlanes, inputSize, dropRatio) {
     string options = "";
-    options += " -DgOutputSize=" + toString(outputSize);
-    options += " -DgOutputSizeSquared=" + toString(outputSize * outputSize);
-    options += " -DgInputSize=" + toString(inputSize);
-    options += " -DgInputSizeSquared=" + toString(inputSize * inputSize);
+    options += " -D gInputWidth=" + toString(inputSize.width);
+    options += " -D gInputHeight=" + toString(inputSize.height);
+    options += " -D gInputArea=" + toString(inputSize.height * inputSize.width);
+    options += " -D gOutputWidth=" + toString(outputSize.width);
+    options += " -D gOutputHeight=" + toString(outputSize.height);
+    options += " -D gOutputArea=" + toString(outputSize.height * outputSize.width);
     options += " -DgNumPlanes=" + toString(numPlanes);
 //    float inverseDropRatio = 1.0f / dropRatio;
 //    string inverseDropRatioString = toString(inverseDropRatio);

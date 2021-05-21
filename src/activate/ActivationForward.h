@@ -20,9 +20,9 @@ public:
     EasyCL *cl;
 
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
 
-    const int outputSize;
+    const Dimensions outputSize;
 
     ActivationFunction const*fn;
 
@@ -30,14 +30,14 @@ public:
     inline int getInputIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * inputSize + row)
-            * inputSize + col;
+            * inputSize.height + row)
+            * inputSize.width + col;
     }
     inline int getResultIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * outputSize + row)
-            * outputSize + col;
+            * outputSize.height + row)
+            * outputSize.width + col;
     }
 
     // [[[cog
@@ -45,10 +45,10 @@ public:
     // cog_addheaders.add()
     // ]]]
     // generated, using cog:
-    ActivationForward(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn);
-    STATIC ActivationForward *instance(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn);
-    STATIC ActivationForward *instanceForTest(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn);
-    STATIC ActivationForward *instanceSpecific(int idx, EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn);
+    ActivationForward(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn);
+    STATIC ActivationForward *instance(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn);
+    STATIC ActivationForward *instanceForTest(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn);
+    STATIC ActivationForward *instanceSpecific(int idx, EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn);
     VIRTUAL void forward(int batchSize, CLWrapper *inputData, CLWrapper *outputData);
     VIRTUAL void forward(int batchSize, float *input, float *output);
     VIRTUAL int getInputNumElements(int batchSize);

@@ -20,21 +20,21 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-ActivationForward::ActivationForward(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn) :
+ActivationForward::ActivationForward(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn) :
         cl(cl),
         numPlanes(numPlanes),
         inputSize(inputSize),
         outputSize(inputSize),
         fn(fn) {
 }
-STATIC ActivationForward *ActivationForward::instance(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn) {
+STATIC ActivationForward *ActivationForward::instance(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn) {
     return new ActivationForwardGpuNaive(cl, numPlanes, inputSize, fn);
 //    return new ActivationForwardCpu(cl, numPlanes, inputSize);
 }
-STATIC ActivationForward *ActivationForward::instanceForTest(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn) {
+STATIC ActivationForward *ActivationForward::instanceForTest(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn) {
     return new ActivationForwardCpu(cl, numPlanes, inputSize, fn);
 }
-STATIC ActivationForward *ActivationForward::instanceSpecific(int idx, EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn) {
+STATIC ActivationForward *ActivationForward::instanceSpecific(int idx, EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn) {
     if(idx == 0) {
         return new ActivationForwardCpu(cl, numPlanes, inputSize, fn);
     }
@@ -61,9 +61,9 @@ VIRTUAL void ActivationForward::forward(int batchSize, float *input, float *outp
     delete inputWrapper;
 }
 VIRTUAL int ActivationForward::getInputNumElements(int batchSize) {
-    return batchSize * numPlanes * inputSize * inputSize;
+    return batchSize * numPlanes * inputSize.height * inputSize.width;
 }
 VIRTUAL int ActivationForward::getOutputNumElements(int batchSize) {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 

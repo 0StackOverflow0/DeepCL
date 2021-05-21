@@ -75,8 +75,8 @@ public:
     inline int getWeightIndex(int filterId, int inputPlane, int filterRow, int filterCol) const {
         return (( filterId 
             * dim.inputPlanes + inputPlane)
-            * dim.filterSize + filterRow)
-            * dim.filterSize + filterCol;
+            * dim.filterSize.height + filterRow)
+            * dim.filterSize.width + filterCol;
     }
     inline float getWeight(int filterId, int inputPlane, int filterRow, int filterCol) const {
 //        getWeights();
@@ -85,8 +85,8 @@ public:
     inline int getOutputIndex(int n, int outPlane, int outRow, int outCol) const {
         return (( n
             * dim.numFilters + outPlane)
-            * dim.outputSize + outRow)
-            * dim.outputSize + outCol;
+            * dim.outputSize.height + outRow)
+            * dim.outputSize.width + outCol;
     }
     inline float getOutput(int n, int outPlane, int outRow, int outCol) const {
         return output[ getOutputIndex(n,outPlane, outRow, outCol) ];
@@ -128,9 +128,10 @@ public:
     VIRTUAL bool needsBackProp();
     VIRTUAL int getOutputNumElements() const;
     VIRTUAL int getOutputPlanes() const;
-    VIRTUAL int getFilterSize() const;
+    VIRTUAL Dimensions getFilterSize() const;
     VIRTUAL bool getPadZeros() const;
-    VIRTUAL int getOutputSize() const;
+    VIRTUAL Dimensions getOutputSize() const;
+    int getFilterStride() const;
     void randomizeWeights(WeightsInitializer *weightsInitializer);
     VIRTUAL void print();
     VIRTUAL void printWeights();

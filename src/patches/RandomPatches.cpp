@@ -62,7 +62,7 @@ VIRTUAL void RandomPatches::setBatchSize(int batchSize) {
     output = new float[ getOutputNumElements() ];
 }
 VIRTUAL int RandomPatches::getOutputNumElements() {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL float *RandomPatches::getOutput() {
     return output;
@@ -71,9 +71,9 @@ VIRTUAL bool RandomPatches::needsBackProp() {
     return false;
 }
 VIRTUAL int RandomPatches::getOutputNumElements() const {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
-VIRTUAL int RandomPatches::getOutputSize() const {
+VIRTUAL Dimensions RandomPatches::getOutputSize() const {
     return outputSize;
 }
 VIRTUAL int RandomPatches::getOutputPlanes() const {
@@ -91,18 +91,18 @@ VIRTUAL bool RandomPatches::hasOutputWrapper() const {
 VIRTUAL void RandomPatches::forward() {
     float *upstreamOutput = previousLayer->getOutput();
     for(int n = 0; n < batchSize; n++) {
-        int patchMargin = inputSize - outputSize;
-        int patchRow = patchMargin / 2;
-        int patchCol = patchMargin / 2;
+        Dimensions patchMargin = inputSize - outputSize;
+        int patchRow = patchMargin.height / 2;
+        int patchCol = patchMargin.width / 2;
         if(training) {
-            patchRow = RandomSingleton::instance()->uniformInt(0, patchMargin);
-            patchCol = RandomSingleton::instance()->uniformInt(0, patchMargin);
+            patchRow = RandomSingleton::instance()->uniformInt(0, patchMargin.height);
+            patchCol = RandomSingleton::instance()->uniformInt(0, patchMargin.width);
         }
         PatchExtractor::extractPatch(n, numPlanes, inputSize, patchSize, patchRow, patchCol, upstreamOutput, output);
     }
 }
 VIRTUAL std::string RandomPatches::asString() const {
-    return "RandomPatches{ inputPlanes=" + toString(numPlanes) + " inputSize=" + toString(inputSize) + " patchSize=" + toString(patchSize) + " }";
+    return "RandomPatches{ inputPlanes=" + toString(numPlanes) + " inputHeight=" + toString(inputSize.height) + " inputWidth=" + toString(inputSize.width) + " patchHeight=" + toString(patchSize.height) + " patchWidth=" + toString(patchSize.width) + " }";
 }
 
 

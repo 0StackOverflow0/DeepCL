@@ -21,11 +21,11 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-DropoutBackwardCpu::DropoutBackwardCpu(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) :
+DropoutBackwardCpu::DropoutBackwardCpu(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) :
         DropoutBackward(cl, numPlanes, inputSize, dropRatio) {
 }
 VIRTUAL void DropoutBackwardCpu::backward(int batchSize, uchar *mask,  float *gradOutput, float *gradInput) {
-    int totalLinearSize = batchSize * numPlanes * inputSize * inputSize;
+    int totalLinearSize = batchSize * numPlanes * inputSize.height * inputSize.width;
     for(int i = 0; i < totalLinearSize; i++) {
         gradInput[i] = mask[i] == 1 ? gradOutput[i] : 0.0f;
     }

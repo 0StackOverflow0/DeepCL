@@ -23,13 +23,13 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-STATIC ActivationBackward *ActivationBackward::instance(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const *fn) {
+STATIC ActivationBackward *ActivationBackward::instance(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const *fn) {
     return new ActivationBackwardGpuNaive(cl, numPlanes, inputSize, fn);
 }
-STATIC ActivationBackward *ActivationBackward::instanceForTest(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const *fn) {
+STATIC ActivationBackward *ActivationBackward::instanceForTest(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const *fn) {
     return new ActivationBackwardCpu(cl, numPlanes, inputSize, fn);
 }
-STATIC ActivationBackward *ActivationBackward::instanceSpecific(int idx, EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const *fn) {
+STATIC ActivationBackward *ActivationBackward::instanceSpecific(int idx, EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const *fn) {
     if(idx == 0) {
         return new ActivationBackwardCpu(cl, numPlanes, inputSize, fn);
     }
@@ -38,7 +38,7 @@ STATIC ActivationBackward *ActivationBackward::instanceSpecific(int idx, EasyCL 
     }
     throw runtime_error("ActivationBackward::instanceSpecific, idx not known: " + toString(idx) );
 }
-ActivationBackward::ActivationBackward(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const *fn) :
+ActivationBackward::ActivationBackward(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const *fn) :
         cl(cl),
         numPlanes(numPlanes),
         inputSize(inputSize),
@@ -46,10 +46,10 @@ ActivationBackward::ActivationBackward(EasyCL *cl, int numPlanes, int inputSize,
         outputSize(inputSize) {
 }
 VIRTUAL int ActivationBackward::getInputNumElements(int batchSize) {
-    return batchSize * numPlanes * inputSize * inputSize;
+    return batchSize * numPlanes * inputSize.height * inputSize.width;
 }
 VIRTUAL int ActivationBackward::getOutputNumElements(int batchSize) {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL void ActivationBackward::backward(int batchSize, float *inputs, float *gradOutput, float *gradInput) {
 //    cout << "ActivationBackward::backward(float *)" << endl;

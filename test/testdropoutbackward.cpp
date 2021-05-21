@@ -99,7 +99,7 @@ TEST( testdropoutbackward, basic_2plane_batchsize2 ) {
 }
 
 TEST( testdropoutbackward, compare_args ) {
-    int inputSize = 9;
+    Dimensions inputSize(9);
     float dropRatio = 0.6f;
     int instance0 = 0;
     int instance1 = 1;
@@ -111,7 +111,8 @@ TEST( testdropoutbackward, compare_args ) {
     TestArgsParser::arg( "dropratio", &dropRatio );
 //    TestArgsParser::arg( "dropoutsize", &dropoutSize );
     TestArgsParser::arg( "numplanes", &numPlanes );
-    TestArgsParser::arg( "inputimagesize", &inputSize );
+    TestArgsParser::arg( "inputimageheight", &inputSize.height );
+    TestArgsParser::arg( "inputimagewidth", &inputSize.width);
     TestArgsParser::arg( "instance0", &instance0 );
     TestArgsParser::arg( "instance1", &instance1 );
     TestArgsParser::go();
@@ -119,10 +120,10 @@ TEST( testdropoutbackward, compare_args ) {
     EasyCL *cl = DeepCLGtestGlobals_createEasyCL();
     DropoutBackward *p0 = DropoutBackward::instanceSpecific( instance0, cl, numPlanes, inputSize, dropRatio );
     DropoutBackward *p1 = DropoutBackward::instanceSpecific( instance1, cl, numPlanes, inputSize, dropRatio );
-    int outputSize = p1->outputSize;
-    int errorsSize = batchSize * outputSize * outputSize * numPlanes;
+    Dimensions outputSize = p1->outputSize;
+    int errorsSize = batchSize * outputSize.height * outputSize.width * numPlanes;
     float *errors = new float[ errorsSize ];
-    int inputNumElements = batchSize * inputSize * inputSize * numPlanes;
+    int inputNumElements = batchSize * inputSize.height * inputSize.width * numPlanes;
     float *errorsForUpstream0 = new float[ inputNumElements ];
     float *errorsForUpstream1 = new float[ inputNumElements ];
     

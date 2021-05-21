@@ -5,9 +5,10 @@
 // obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
+#include "DeepCLDllExport.h"
 
 class Translator {
 public:
-    static void translate(int n, int numPlanes, int imageSize, int translateRows, int translateCols, float *source, float *destination);
+    static void translate(int n, int numPlanes, Dimensions imageSize, int translateRows, int translateCols, float *source, float *destination);
 };
 

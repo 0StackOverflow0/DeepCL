@@ -31,11 +31,11 @@ VIRTUAL void ActivationForwardGpuNaive::forward(int batchSize, CLWrapper *inputW
 //    cout << StatefulTimer::instance()->prefix << "ActivationForwardGpuNaive::forward(CLWrapper *)" << endl;
     StatefulTimer::instance()->timeCheck("ActivationForwardGpuNaive::forward start");
 
-    kernel->input(batchSize * numPlanes * outputSize * outputSize);
+    kernel->input(batchSize * numPlanes * outputSize.height * outputSize.width);
     kernel->output(outputWrapper)->input(inputWrapper);
 //    kernel->input(batchSize)->input(inputWrapper)->output(outputWrapper);
 
-    int globalSize = batchSize * numPlanes * outputSize * outputSize;
+    int globalSize = batchSize * numPlanes * outputSize.height * outputSize.width;
     int workgroupsize = cl->getMaxWorkgroupSize();
     globalSize = (( globalSize + workgroupsize - 1) / workgroupsize) * workgroupsize;
 //    cout << "ActivationForwardGpuNaive::forward batchsize=" << batchSize << " g=" << globalSize << " w=" << workgroupsize << endl;
@@ -47,14 +47,16 @@ VIRTUAL void ActivationForwardGpuNaive::forward(int batchSize, CLWrapper *inputW
 
     StatefulTimer::instance()->timeCheck("ActivationForwardGpuNaive::forward end");
 }
-ActivationForwardGpuNaive::ActivationForwardGpuNaive(EasyCL *cl, int numPlanes, int inputSize, ActivationFunction const*fn) :
+ActivationForwardGpuNaive::ActivationForwardGpuNaive(EasyCL *cl, int numPlanes, Dimensions inputSize, ActivationFunction const*fn) :
         ActivationForward(cl, numPlanes, inputSize, fn) {
     // cout << "fn->getDefintName() " << fn->getDefineName() << endl;
     string options = "";
-    options += " -DgOutputSize=" + toString(outputSize);
-    options += " -DgOutputSizeSquared=" + toString(outputSize * outputSize);
-    options += " -DgInputSize=" + toString(inputSize);
-    options += " -DgInputSizeSquared=" + toString(inputSize * inputSize);
+    options += " -DgOutputWidth=" + toString(outputSize.width);
+    options += " -DgOutputHeight=" + toString(outputSize.height);
+    options += " -DgOutputArea=" + toString(outputSize.height * outputSize.width);
+    options += " -DgInputWidth=" + toString(inputSize.width);
+    options += " -DgInputHeight=" + toString(inputSize.height);
+    options += " -DgInputArea=" + toString(inputSize.height * inputSize.width);
     options += " -DgNumPlanes=" + toString(numPlanes);
     options += string(" -D ")  + fn->getDefineName();
 

@@ -49,9 +49,9 @@ VIRTUAL void ForceBackpropLayer::printOutput() {
         std::cout << "ForceBackpropLayer n " << n << ":" << std::endl;
         for(int plane = 0; plane < std::min(5, outputPlanes); plane++) {
             if(outputPlanes > 1) std::cout << "    plane " << plane << ":" << std::endl;
-            for(int i = 0; i < std::min(5, outputSize); i++) {
+            for(int i = 0; i < std::min(5, outputSize.height); i++) {
                 std::cout << "      ";
-                for(int j = 0; j < std::min(5, outputSize); j++) {
+                for(int j = 0; j < std::min(5, outputSize.width); j++) {
                     std::cout << getOutput(n, plane, i, j) << " ";
 //output[
 //                            n * numPlanes * imageSize*imageSize +
@@ -59,10 +59,10 @@ VIRTUAL void ForceBackpropLayer::printOutput() {
 //                            i * imageSize +
 //                            j ] << " ";
                 }
-                if(outputSize > 5) std::cout << " ... ";
+                if(outputSize.width > 5) std::cout << " ... ";
                 std::cout << std::endl;
             }
-            if(outputSize > 5) std::cout << " ... " << std::endl;
+            if(outputSize.height > 5) std::cout << " ... " << std::endl;
         }
         if(outputPlanes > 5) std::cout << "   ... other planes ... " << std::endl;
     }
@@ -96,14 +96,14 @@ VIRTUAL void ForceBackpropLayer::forward() {
 VIRTUAL void ForceBackpropLayer::backward() {
   // do nothing... ?
 }
-VIRTUAL int ForceBackpropLayer::getOutputSize() const {
+VIRTUAL Dimensions ForceBackpropLayer::getOutputSize() const {
     return outputSize;
 }
 VIRTUAL int ForceBackpropLayer::getOutputPlanes() const {
     return outputPlanes;
 }
 VIRTUAL int ForceBackpropLayer::getOutputCubeSize() const {
-    return outputPlanes * outputSize * outputSize;
+    return outputPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL int ForceBackpropLayer::getOutputNumElements() const {
     return batchSize * getOutputCubeSize();
@@ -112,7 +112,7 @@ VIRTUAL std::string ForceBackpropLayer::toString() {
     return toString();
 }
 VIRTUAL std::string ForceBackpropLayer::asString() const {
-    return std::string("") + "ForceBackpropLayer{ outputPlanes=" + ::toString(outputPlanes) + " outputSize=" +  ::toString(outputSize) + " }";
+    return std::string("") + "ForceBackpropLayer{ outputPlanes=" + ::toString(outputPlanes) + " outputHeight=" +  ::toString(outputSize.height) + "outputWidth=" +  ::toString(outputSize.width) + " }";
 }
 
 

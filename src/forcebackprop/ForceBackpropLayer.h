@@ -26,7 +26,7 @@ class ForceBackpropLayerMaker;
 class ForceBackpropLayer : public Layer, IHasToString {
 public:
     const int outputPlanes;
-    const int outputSize;
+    const Dimensions outputSize;
 
     int batchSize;
     int allocatedSize;
@@ -35,8 +35,8 @@ public:
     inline int getOutputIndex(int n, int outPlane, int outRow, int outCol) const {
         return (( n
             * outputPlanes + outPlane)
-            * outputSize + outRow)
-            * outputSize + outCol;
+            * outputSize.height + outRow)
+            * outputSize.width + outCol;
     }
     inline float getOutput(int n, int outPlane, int outRow, int outCol) const {
         return output[ getOutputIndex(n,outPlane, outRow, outCol) ];
@@ -59,7 +59,7 @@ public:
     VIRTUAL void setBatchSize(int batchSize);
     VIRTUAL void forward();
     VIRTUAL void backward();
-    VIRTUAL int getOutputSize() const;
+    VIRTUAL Dimensions getOutputSize() const;
     VIRTUAL int getOutputPlanes() const;
     VIRTUAL int getOutputCubeSize() const;
     VIRTUAL int getOutputNumElements() const;

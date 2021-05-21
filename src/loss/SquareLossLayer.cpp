@@ -37,8 +37,8 @@ VIRTUAL float SquareLossLayer::calcLoss(float const *expected) {
     float *input = previousLayer->getOutput();
 //    cout << "SquareLossLayer::calcLoss" << endl;
     int numPlanes = previousLayer->getOutputPlanes();
-    int imageSize = previousLayer->getOutputSize();
-    int totalLinearSize = batchSize * numPlanes * imageSize * imageSize;
+    Dimensions imageSize = previousLayer->getOutputSize();
+    int totalLinearSize = batchSize * numPlanes * imageSize.height * imageSize.width;
     for(int i = 0; i < totalLinearSize; i++) {
 //        if(i < 5) cout << "input[" << i << "]=" << input[i] << endl;
         float diff = input[i] - expected[i];

@@ -27,7 +27,7 @@ public:
     CLWrapper *maskWrapper,
     CLWrapper *gradOutputWrapper,
     CLWrapper *gradInputWrapper);
-    DropoutBackwardGpuNaive(EasyCL *cl, int numPlanes, int inputSize, float dropRatio);
+    DropoutBackwardGpuNaive(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio);
 
     // [[[end]]]
 };

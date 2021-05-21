@@ -16,6 +16,35 @@
 
 using namespace std;
 
+TEST(testpoolingbackward, basic_1d) {
+    int batchSize = 1;
+    int numPlanes = 1;
+    Dimensions imageSize(4, 1);
+    int poolingSize = 2;
+    EasyCL* cl = DeepCLGtestGlobals_createEasyCL();
+    PoolingBackward* poolingBackprop = PoolingBackward::instanceForTest(cl, false, numPlanes, imageSize, poolingSize);
+    float errors[] = {
+        3, 5
+    };
+    int selectors[] = {
+        0, 1
+    };
+    float* errorsForUpstream = new float[poolingBackprop->getInputNumElements(batchSize)];
+
+    poolingBackprop->backward(batchSize, errors, selectors, errorsForUpstream);
+
+    float expectedErrorsForUpstream[] = {
+        3,0,0,5
+    };
+    for (int i = 0; i < 4; i++) {
+        ASSERT_EQ(expectedErrorsForUpstream[i], errorsForUpstream[i]);
+    }
+
+    delete poolingBackprop;
+    delete[] errorsForUpstream;
+    delete cl;
+}
+
 TEST( testpoolingbackward, basic ) {
     int batchSize = 1;
     int numPlanes = 1;
@@ -100,7 +129,7 @@ TEST( testpoolingbackward, basic_2plane_batchsize2 ) {
 }
 
 TEST( SLOW_testpoolingbackward, compare_args ) {
-    int inputSize = 9;
+    Dimensions inputSize( 9 );
     int poolingSize = 2;
     int instance0 = 0;
     int instance1 = 1;
@@ -111,7 +140,8 @@ TEST( SLOW_testpoolingbackward, compare_args ) {
     TestArgsParser::arg( "batchSize", &batchSize );
     TestArgsParser::arg( "poolingsize", &poolingSize );
     TestArgsParser::arg( "numplanes", &numPlanes );
-    TestArgsParser::arg( "inputimagesize", &inputSize );
+    TestArgsParser::arg( "inputimagewidth", &inputSize.width );
+    TestArgsParser::arg( "inputimageheight", &inputSize.height );
     TestArgsParser::arg( "instance0", &instance0 );
     TestArgsParser::arg( "instance1", &instance1 );
     TestArgsParser::go();
@@ -121,10 +151,10 @@ TEST( SLOW_testpoolingbackward, compare_args ) {
     EasyCL *cl = DeepCLGtestGlobals_createEasyCL();
     PoolingBackward *p0 = PoolingBackward::instanceSpecific( instance0, cl, padZeros, numPlanes, inputSize, poolingSize );
     PoolingBackward *p1 = PoolingBackward::instanceSpecific( instance1, cl, padZeros, numPlanes, inputSize, poolingSize );
-    int outputSize = p1->outputSize;
-    int errorsSize = batchSize * outputSize * outputSize * numPlanes;
+    Dimensions outputSize = p1->outputSize;
+    int errorsSize = batchSize * outputSize.height * outputSize.width * numPlanes;
     float *errors = new float[ errorsSize ];
-    int inputNumElements = batchSize * inputSize * inputSize * numPlanes;
+    int inputNumElements = batchSize * inputSize.height * inputSize.width * numPlanes;
     int *selectors = new int[ errorsSize ];
     float *errorsForUpstream0 = new float[ inputNumElements ];
     float *errorsForUpstream1 = new float[ inputNumElements ];

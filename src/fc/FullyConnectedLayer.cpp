@@ -22,7 +22,7 @@ FullyConnectedLayer::FullyConnectedLayer(EasyCL *cl, Layer *previousLayer, Fully
 //        fn(maker->_activationFunction),
         batchSize(0) {
     ConvolutionalMaker *convolutionalMaker = new ConvolutionalMaker();
-    convolutionalMaker->numFilters(numPlanes * imageSize * imageSize)
+    convolutionalMaker->numFilters(numPlanes * imageSize.height * imageSize.width)
                       ->filterSize(previousLayer->getOutputSize())
                         ->biased(maker->_biased)
                         ->weightsInitializer(maker->_weightsInitializer);
@@ -43,9 +43,9 @@ VIRTUAL void FullyConnectedLayer::setBatchSize(int batchSize) {
     this->batchSize = batchSize;
 }
 VIRTUAL int FullyConnectedLayer::getOutputCubeSize() const {
-    return numPlanes * imageSize * imageSize;
+    return numPlanes * imageSize.height * imageSize.width;
 }
-VIRTUAL int FullyConnectedLayer::getOutputSize() const {
+VIRTUAL Dimensions FullyConnectedLayer::getOutputSize() const {
     return imageSize;
 }
 VIRTUAL int FullyConnectedLayer::getOutputPlanes() const {
@@ -137,6 +137,6 @@ VIRTUAL void FullyConnectedLayer::setTrainerState(TrainerStateMaker *TrainerStat
     convolutionalLayer->setTrainerState(TrainerStateMaker);
 }
 VIRTUAL std::string FullyConnectedLayer::asString() const {
-    return "FullyConnectedLayer{ numPlanes=" + toString(numPlanes) + " imageSize=" + toString(imageSize) + " }";
+    return "FullyConnectedLayer{ numPlanes=" + toString(numPlanes) + " imageHeight=" + toString(imageSize.height) + " imageWidth=" + toString(imageSize.width) + " }";
 }
 

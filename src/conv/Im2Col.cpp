@@ -27,21 +27,25 @@ PUBLIC VIRTUAL Im2Col::~Im2Col() {
     delete kernelCol2Im;
 }
 void Im2Col::setupBuilder(TemplatedKernel *builder) {
-    int size = dim.inputSize;
-    int padding = dim.padZeros ? dim.halfFilterSize : 0;
+    Dimensions size = dim.inputSize;
+    Dimensions padding = dim.padZeros ? dim.halfFilterSize : 0;
     int stride = 1;
     int channels = dim.inputPlanes;
-    int size_col = (size + 2 * padding - dim.filterSize) / stride + 1;
+    Dimensions size_col = ( (size + ( padding * 2 ) - dim.filterSize ) / stride ) + 1;
 
-    this->numKernelsIm2Col = channels * size_col * size_col;
+    this->numKernelsIm2Col = channels * size_col.height * size_col.width;
     this->numKernelsCol2Im = channels * dim.inputSizeSquared;
 
-    builder->set("padding", dim.padZeros ? dim.halfFilterSize : 0);
+    builder->set("paddingWidth", dim.padZeros ? dim.halfFilterSize.width : 0);
+    builder->set("paddingHeight", dim.padZeros ? dim.halfFilterSize.height : 0);
     builder->set("stride", 1);
-    builder->set("colSize", size_col);
+    builder->set("colWidth", size_col.width);
+    builder->set("colHeight", size_col.height);
     builder->set("channels", dim.inputPlanes);
-    builder->set("filterSize", dim.filterSize);
-    builder->set("size", dim.inputSize);
+    builder->set("filterWidth", dim.filterSize.width);
+    builder->set("filterHeight", dim.filterSize.height);
+    builder->set("imWidth", dim.inputSize.width);
+    builder->set("imHeight", dim.inputSize.height);
 }
 void Im2Col::buildKernelIm2Col() {
     TemplatedKernel builder(cl);
@@ -124,22 +128,22 @@ STATIC std::string Im2Col::getKernelTemplate() {
     "  global const float *data_im = im_data + im_offset;\n"
     "\n"
     "  CL_KERNEL_LOOP(index, n) {\n"
-    "    int w_out = index % {{colSize}};\n"
-    "    index /= {{colSize}};\n"
-    "    int h_out = index % {{colSize}};\n"
-    "    int channel_in = index / {{colSize}};\n"
-    "    int channel_out = channel_in * {{filterSize}} * {{filterSize}};\n"
-    "    int h_in = h_out * {{stride}} - {{padding}};\n"
-    "    int w_in = w_out * {{stride}} - {{padding}};\n"
-    "    data_col += (channel_out * {{colSize}} + h_out) * {{colSize}} + w_out;\n"
-    "    data_im += (channel_in * {{size}} + h_in) * {{size}} + w_in;\n"
-    "    for (int i = 0; i < {{filterSize}}; ++i) {\n"
-    "      for (int j = 0; j < {{filterSize}}; ++j) {\n"
+    "    int w_out = index % {{colWidth}};\n"
+    "    index /= {{colWidth}};\n"
+    "    int h_out = index % {{colHeight}};\n"
+    "    int channel_in = index / {{colWidth}};\n"
+    "    int channel_out = channel_in * {{filterHeight}} * {{filterWidth}};\n"
+    "    int h_in = h_out * {{stride}} - {{paddingHeight}};\n"
+    "    int w_in = w_out * {{stride}} - {{paddingWidth}};\n"
+    "    data_col += (channel_out * {{colHeight}} + h_out) * {{colWidth}} + w_out;\n"
+    "    data_im += (channel_in * {{imHeight}} + h_in) * {{imWidth}} + w_in;\n"
+    "    for (int i = 0; i < {{filterHeight}}; ++i) {\n"
+    "      for (int j = 0; j < {{filterWidth}}; ++j) {\n"
     "        int h = h_in + i;\n"
     "        int w = w_in + j;\n"
-    "        *data_col = (h >= 0 && w >= 0 && h < {{size}} && w < {{size}}) ?\n"
-    "          data_im[i * {{size}} + j] : 0;\n"
-    "        data_col += {{colSize}} * {{colSize}};\n"
+    "        *data_col = (h >= 0 && w >= 0 && h < {{imHeight}} && w < {{imWidth}}) ?\n"
+    "          data_im[i * {{imWidth}} + j] : 0;\n"
+    "        data_col += {{colHeight}} * {{colWidth}};\n"
     "      }\n"
     "    }\n"
     "  }\n"
@@ -153,18 +157,18 @@ STATIC std::string Im2Col::getKernelTemplate() {
     "\n"
     "  for (int index = get_group_id(0) * get_local_size(0) + get_local_id(0); index < (n); index += get_local_size(0) * get_num_groups(0)) {\n"
     "    float val = 0;\n"
-    "    int w = index % {{size}} + {{padding}};\n"
-    "    int h = (index / {{size}}) % {{size}} + {{padding}};\n"
-    "    int c = index / ({{size}} * {{size}});\n"
+    "    int w = index % {{imWidth}} + {{paddingWidth}};\n"
+    "    int h = (index / {{imWidth}}) % {{imHeight}} + {{paddingHeight}};\n"
+    "    int c = index / ({{imHeight}} * {{imWidth}});\n"
     "    // compute the start and end of the output\n"
-    "    int w_col_start = (w < {{filterSize}}) ? 0 : (w - {{filterSize}}) / {{stride}} + 1;\n"
-    "    int w_col_end = min(w / {{stride}} + 1, {{colSize}});\n"
-    "    int h_col_start = (h < {{filterSize}}) ? 0 : (h - {{filterSize}}) / {{stride}} + 1;\n"
-    "    int h_col_end = min(h / {{stride}} + 1, {{colSize}});\n"
+    "    int w_col_start = (w < {{filterWidth}}) ? 0 : (w - {{filterWidth}}) / {{stride}} + 1;\n"
+    "    int w_col_end = min(w / {{stride}} + 1, {{colWidth}});\n"
+    "    int h_col_start = (h < {{filterHeight}}) ? 0 : (h - {{filterHeight}}) / {{stride}} + 1;\n"
+    "    int h_col_end = min(h / {{stride}} + 1, {{colHeight}});\n"
     "\n"
-    "    int offset = (c * {{filterSize}} * {{filterSize}} + h * {{filterSize}} + w) * {{colSize}} * {{colSize}};\n"
-    "    int coeff_h_col = (1 - {{stride}} * {{filterSize}} * {{colSize}}) * {{colSize}};\n"
-    "    int coeff_w_col = (1 - {{stride}} * {{colSize}} * {{colSize}});\n"
+    "    int offset = (c * {{filterWidth}} * {{filterHeight}} + h * {{filterWidth}} + w) * {{colHeight}} * {{colWidth}};\n"
+    "    int coeff_h_col = (1 - {{stride}} * {{filterHeight}} * {{colHeight}}) * {{colWidth}};\n"
+    "    int coeff_w_col = (1 - {{stride}} * {{colHeight}} * {{colWidth}});\n"
     "    for (int h_col = h_col_start; h_col < h_col_end; ++h_col) {\n"
     "      for (int w_col = w_col_start; w_col < w_col_end; ++w_col) {\n"
     "        val += data_col[offset + h_col * coeff_h_col + w_col * coeff_w_col];\n"

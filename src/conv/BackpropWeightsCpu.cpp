@@ -44,40 +44,39 @@ VIRTUAL void BackpropWeightsCpu::calcGradWeights(int batchSize, float *gradOutpu
 
     const float learningMultiplier = learningRateToMultiplier(batchSize);
 
-    const int halfFilterSize = dim.filterSize >> 1;
-    const int margin = dim.padZeros ? halfFilterSize : 0;
+    const Dimensions margin = dim.padZeros ? dim.halfFilterSize : 0;
     for(int outPlane = 0; outPlane < dim.numFilters; outPlane++) {
         for(int inputPlane = 0; inputPlane < dim.inputPlanes; inputPlane++) {
-            for(int filterRow = 0; filterRow < dim.filterSize; filterRow++) {
-                for(int filterCol = 0; filterCol <dim.filterSize; filterCol++) {
+            for(int filterRow = 0; filterRow < dim.filterSize.height; filterRow++) {
+                for(int filterCol = 0; filterCol <dim.filterSize.width; filterCol++) {
                     int weightIndex = (( outPlane
                         * dim.inputPlanes + inputPlane)
-                        * dim.filterSize + filterRow)
-                        * dim.filterSize + filterCol;
+                        * dim.filterSize.height + filterRow)
+                        * dim.filterSize.width + filterCol;
                     float thiswchange = 0;
                     float thisBiasChange = 0;
                     // gradWeights:     [outPlane][inputPlane][filterRow][filterCol]
                     //       aggregate over:  [outRow][outCol][n]
-                    for(int outRow = 0; outRow < dim.outputSize; outRow++) {
-                        int inputRow = outRow - margin + filterRow;
-                        if(inputRow < 0 || inputRow > dim.inputSize - 1) {
+                    for(int outRow = 0; outRow < dim.outputSize.height; outRow++) {
+                        int inputRow = outRow - margin.height + filterRow;
+                        if(inputRow < 0 || inputRow > dim.inputSize.height - 1) {
                             continue;
                         }
-                        for(int outCol = 0; outCol < dim.outputSize; outCol++) {
-                            int inputCol = outCol - margin + filterCol;
-                            if(inputCol < 0 || inputCol > dim.inputSize - 1) {
+                        for(int outCol = 0; outCol < dim.outputSize.width; outCol++) {
+                            int inputCol = outCol - margin.width + filterCol;
+                            if(inputCol < 0 || inputCol > dim.inputSize.width - 1) {
                                 continue;
                             }
                             for(int n = 0; n < batchSize; n++) {
                                 int outputIndex = (( n
                                     * dim.numFilters + outPlane)
-                                    * dim.outputSize + outRow)
-                                    * dim.outputSize + outCol;
+                                    * dim.outputSize.height + outRow)
+                                    * dim.outputSize.width + outCol;
                                 float gradOutputValue = gradOutput[outputIndex];
                                 int inputIndex = (( n
                                     * dim.inputPlanes + inputPlane)
-                                    * dim.inputSize + inputRow)
-                                    * dim.inputSize + inputCol;
+                                    * dim.inputSize.height + inputRow)
+                                    * dim.inputSize.width + inputCol;
                                 float inputValue = inputs[ inputIndex ];
                                 thiswchange += gradOutputValue * inputValue;
                                 thisBiasChange += gradOutputValue; // fairly sure this is right.  Fairly :-P
@@ -87,7 +86,7 @@ VIRTUAL void BackpropWeightsCpu::calcGradWeights(int batchSize, float *gradOutpu
 //                    cout << "weight change " << weightIndex << " " << learningMultiplier * thiswchange << endl;
                     gradWeights[ weightIndex ] = thiswchange * learningMultiplier;
                     if(dim.biased) {
-                        if(filterRow == margin && filterCol == margin && inputPlane == 0) {
+                        if(filterRow == margin.height && filterCol == margin.width && inputPlane == 0) {
                             gradBias[ outPlane ] = learningMultiplier * thisBiasChange;
                         }
                     }

@@ -20,24 +20,24 @@ public:
 
     const bool padZeros;
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
     const int poolingSize;
 
-    const int outputSize;
+    const Dimensions outputSize;
 //    const int poolingSizeSquared;
 
     virtual ~PoolingBackward() {}
     inline int getInputIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * inputSize + row)
-            * inputSize + col;
+            * inputSize.height + row)
+            * inputSize.width + col;
     }
     inline int getResultIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * outputSize + row)
-            * outputSize + col;
+            * outputSize.height + row)
+            * outputSize.width + col;
     }
 
     // [[[cog
@@ -45,10 +45,10 @@ public:
     // cog_addheaders.add()
     // ]]]
     // generated, using cog:
-    STATIC PoolingBackward *instance(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize);
-    STATIC PoolingBackward *instanceForTest(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize);
-    STATIC PoolingBackward *instanceSpecific(int idx, EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize);
-    PoolingBackward(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize);
+    PoolingBackward(EasyCL* cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize);
+    STATIC PoolingBackward *instance(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize);
+    STATIC PoolingBackward *instanceForTest(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize);
+    STATIC PoolingBackward *instanceSpecific(int idx, EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize);
     VIRTUAL int getInputNumElements(int batchSize);
     VIRTUAL int getOutputNumElements(int batchSize);
     VIRTUAL void backward(int batchSize, float *gradOutput, int *selectors, float *gradInput);

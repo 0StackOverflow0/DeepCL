@@ -20,7 +20,7 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-DropoutForward::DropoutForward(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) :
+DropoutForward::DropoutForward(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) :
         cl(cl),
         numPlanes(numPlanes),
         inputSize(inputSize),
@@ -30,14 +30,14 @@ DropoutForward::DropoutForward(EasyCL *cl, int numPlanes, int inputSize, float d
 //        throw runtime_error("inputSize should be an exact multiple of dropoutsize: " + toString(inputSize) + " " + toString(dropoutSize) );
 //    }
 }
-STATIC DropoutForward *DropoutForward::instance(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) {
+STATIC DropoutForward *DropoutForward::instance(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) {
     return new DropoutForwardGpuNaive(cl, numPlanes, inputSize, dropRatio);
 //    return new DropoutForwardCpu(cl, padZeros, numPlanes, inputSize, dropoutSize);
 }
-STATIC DropoutForward *DropoutForward::instanceForTest(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) {
+STATIC DropoutForward *DropoutForward::instanceForTest(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) {
     return new DropoutForwardCpu(cl, numPlanes, inputSize, dropRatio);
 }
-STATIC DropoutForward *DropoutForward::instanceSpecific(int idx, EasyCL *cl, int numPlanes, int inputSize, float dropRatio) {
+STATIC DropoutForward *DropoutForward::instanceSpecific(int idx, EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) {
     if(idx == 0) {
         return new DropoutForwardCpu(cl, numPlanes, inputSize, dropRatio);
     }
@@ -68,10 +68,10 @@ VIRTUAL void DropoutForward::forward(int batchSize, unsigned char *masks, float 
     delete masksWrapper;
 }
 VIRTUAL int DropoutForward::getInputNumElements(int batchSize) {
-    return batchSize * numPlanes * inputSize * inputSize;
+    return batchSize * numPlanes * inputSize.height * inputSize.width;
 }
 VIRTUAL int DropoutForward::getOutputNumElements(int batchSize) {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 
 

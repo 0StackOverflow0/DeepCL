@@ -428,13 +428,13 @@ TEST(testupdateweights, backprop_weights_2_upstreamimagesize3_filtersize1) {
 
     float *data = allocateInputCleared(batchSize, dim);
     data[0] = 2;
-    data[1 * dim.inputSize + 1] = 7;
-    data[2 * dim.inputSize + 2] = 5;
+    data[1 * dim.inputSize.width + 1] = 7;
+    data[2 * dim.inputSize.width + 2] = 5;
 
     float *errors = allocateErrorsCleared(batchSize, dim);
     errors[0] = 5;
-    errors[1 * dim.outputSize + 1] = 11;
-    errors[2 * dim.outputSize + 2] = 3;
+    errors[1 * dim.outputSize.width + 1] = 11;
+    errors[2 * dim.outputSize.width + 2] = 3;
 
     float expectedOutput[] = { -(2 * 5 +  5 * 3 + 7 * 11) };          //           
 
@@ -450,11 +450,11 @@ TEST(testupdateweights, backprop_weights_2_upstreamimagesize16_filtersize1) {
 
     float *data = allocateInputCleared(batchSize, dim);
     data[0] = 2;
-    data[15 * dim.inputSize + 15] = 5;
+    data[15 * dim.inputSize.width + 15] = 5;
 
     float *errors = allocateErrorsCleared(batchSize, dim);
     errors[0] = 4;
-    errors[15 * dim.outputSize + 15] = 3;
+    errors[15 * dim.outputSize.width + 15] = 3;
 
     float expectedOutput[] = { -(2 * 4 +  3 * 5) };          //           
 
@@ -473,13 +473,13 @@ TEST(testupdateweights, backprop_weights_2_upstreamimagesize17_filtersize1) {
     data[0] = 2;
     data[1] = 3.2f;
     data[2] = 1.234f;
-    data[16 * dim.inputSize + 16] = 5;
+    data[16 * dim.inputSize.width + 16] = 5;
 
     float *errors = allocateErrorsCleared(batchSize, dim);
     errors[0] = 4;
     errors[1] = -2.5f;
     errors[2] = 4.125f;
-    errors[16 * dim.outputSize + 16] = 3;
+    errors[16 * dim.outputSize.width + 16] = 3;
 
     float expectedOutput[] = { -(4*2 - 3.2f * 2.5f + 1.234f * 4.125f + 3*5) };          // 
 
@@ -494,18 +494,18 @@ TEST(testupdateweights, backprop_weights_2_upstreamimagesize17_filtersize1_mored
     const float learningMultiplier = 1;
 
     float *data = allocateInputCleared(batchSize, dim);
-    for(int i = 0; i < square(dim.inputSize); i++) {
+    for(int i = 0; i < dim.inputSize.height * dim.inputSize.width; i++) {
         data[i] = ((1 + i) % 20) / 5.3f;
     }
 
     float *errors = allocateErrorsCleared(batchSize, dim);
-    for(int i = 0; i < square(dim.outputSize); i++) {
+    for(int i = 0; i < dim.outputSize.height * dim.outputSize.width; i++) {
         errors[i] = ((2 + i) % 17) / 4.2f;
     }
 
     float expectedOutput[1];
     expectedOutput[0] = 0;
-    for (int i = 0; i < square(dim.inputSize); i++) {
+    for (int i = 0; i < dim.inputSize.height * dim.inputSize.width; i++) {
         expectedOutput[0] += - data[i] * errors[i];
     }
     cout << "expectedresult: " << expectedOutput[0] << endl;
@@ -544,11 +544,11 @@ TEST(testupdateweights, backprop_instance3_smaller2) {
     CLWrapper *weights0Wrap = cl->wrap(10000, weights0);
     CLWrapper *weights1Wrap = cl->wrap(10000, weights1);
 
-    for(int i = 0 * dim.inputSize; i < dim.inputSize * dim.inputSize; i+= dim.inputSize * 4) {
+    for(int i = 0 * dim.inputSize.width; i < dim.inputSize.height * dim.inputSize.width; i+= dim.inputSize.width * 4) {
         inputData[i] = 3;
     }
 
-    for(int i = 0; i < dim.outputSize * dim.outputSize; i+= dim.outputSize) {
+    for(int i = 0; i < dim.outputSize.height * dim.outputSize.width; i+= dim.outputSize.width) {
         errors[i] = 2;
     }
 

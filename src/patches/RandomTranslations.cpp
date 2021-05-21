@@ -62,7 +62,7 @@ VIRTUAL void RandomTranslations::setBatchSize(int batchSize) {
     output = new float[ getOutputNumElements() ];
 }
 VIRTUAL int RandomTranslations::getOutputNumElements() {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL float *RandomTranslations::getOutput() {
     return output;
@@ -71,9 +71,9 @@ VIRTUAL bool RandomTranslations::needsBackProp() {
     return false;
 }
 VIRTUAL int RandomTranslations::getOutputNumElements() const {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
-VIRTUAL int RandomTranslations::getOutputSize() const {
+VIRTUAL Dimensions RandomTranslations::getOutputSize() const {
     return outputSize;
 }
 VIRTUAL int RandomTranslations::getOutputPlanes() const {
@@ -83,7 +83,7 @@ VIRTUAL int RandomTranslations::getTranslationSize() const {
     return translateSize;
 }
 VIRTUAL int RandomTranslations::getOutputCubeSize() const {
-    return numPlanes * outputSize * outputSize * batchSize;
+    return numPlanes * outputSize.height * outputSize.width * batchSize;
 }
 VIRTUAL int RandomTranslations::getPersistSize(int version) const {
     return 0;
@@ -107,7 +107,7 @@ VIRTUAL void RandomTranslations::forward() {
     }
 }
 VIRTUAL std::string RandomTranslations::asString() const {
-    return "RandomTranslations{ inputPlanes=" + toString(numPlanes) + " inputSize=" + toString(inputSize) + " translateSize=" + toString(translateSize) + " }";
+    return "RandomTranslations{ inputPlanes=" + toString(numPlanes) + " inputHeight=" + toString(inputSize.height) + " inputWidth=" + toString(inputSize.width) + " translateSize=" + toString(translateSize) + " }";
 }
 
 

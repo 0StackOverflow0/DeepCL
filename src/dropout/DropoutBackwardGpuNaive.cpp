@@ -45,11 +45,11 @@ VIRTUAL void DropoutBackwardGpuNaive::backward(
 //    kMemset->run_1d(numWorkgroups * workgroupSize, workgroupSize);
 //    cl->finish();
 
-    kernel  ->in(batchSize * numPlanes * outputSize * outputSize)
+    kernel  ->in(batchSize * numPlanes * outputSize.height * outputSize.width)
             ->in(maskWrapper)
             ->in(gradOutputWrapper)
             ->out(gradInputWrapper);
-    int globalSize = batchSize * numPlanes * outputSize * outputSize;
+    int globalSize = batchSize * numPlanes * outputSize.height * outputSize.width;
     int workgroupSize = 64;
     int numWorkgroups = (globalSize + workgroupSize - 1) / workgroupSize;
     kernel->run_1d(numWorkgroups * workgroupSize, workgroupSize);
@@ -57,15 +57,17 @@ VIRTUAL void DropoutBackwardGpuNaive::backward(
 
     StatefulTimer::instance()->timeCheck("DropoutBackwardGpuNaive::backward end");
 }
-DropoutBackwardGpuNaive::DropoutBackwardGpuNaive(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) :
+DropoutBackwardGpuNaive::DropoutBackwardGpuNaive(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) :
         DropoutBackward(cl, numPlanes, inputSize, dropRatio) {
 //    std::string options = "-D " + fn->getDefineName();
     string options = "";
     options += " -D gNumPlanes=" + toString(numPlanes);
-    options += " -D gInputSize=" + toString(inputSize);
-    options += " -D gInputSizeSquared=" + toString(inputSize * inputSize);
-    options += " -D gOutputSize=" + toString(outputSize);
-    options += " -D gOutputSizeSquared=" + toString(outputSize * outputSize);
+    options += " -D gInputWidth=" + toString(inputSize.width);
+    options += " -D gInputHeight=" + toString(inputSize.height);
+    options += " -D gInputArea=" + toString(inputSize.height * inputSize.width);
+    options += " -D gOutputWidth=" + toString(outputSize.width);
+    options += " -D gOutputHeight=" + toString(outputSize.height);
+    options += " -D gOutputArea=" + toString(outputSize.height * outputSize.width);
 //    float inverseDropRatio = 1.0f / dropRatio;
     string dropRatioString = toString(dropRatio);
     if(dropRatioString.find(".") == string::npos) {

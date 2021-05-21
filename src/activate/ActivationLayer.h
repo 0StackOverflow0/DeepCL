@@ -23,9 +23,9 @@ class ActivationMaker;
 class ActivationLayer : public Layer {
 public:
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
 
-    const int outputSize;
+    const Dimensions outputSize;
 
     ActivationFunction const *fn;
 
@@ -63,7 +63,7 @@ public:
     VIRTUAL bool needsBackProp();
     VIRTUAL int getOutputNumElements() const;
     VIRTUAL int getOutputCubeSize() const;
-    VIRTUAL int getOutputSize() const;
+    VIRTUAL Dimensions getOutputSize() const;
     VIRTUAL const char *getActivationAsCharStar() const;
     VIRTUAL int getOutputPlanes() const;
     VIRTUAL bool providesGradInputWrapper() const;

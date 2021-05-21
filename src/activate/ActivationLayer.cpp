@@ -68,8 +68,8 @@ VIRTUAL std::string ActivationLayer::getClassName() const {
 VIRTUAL float ActivationLayer::getOutput(int n, int plane, int row, int col) {
     int index = (( n
         * numPlanes + plane)
-        * outputSize + row)
-        * outputSize + col;
+        * outputSize.height + row)
+        * outputSize.width + col;
     return output[ index ];
 }
 VIRTUAL void ActivationLayer::printOutput() {
@@ -86,15 +86,15 @@ VIRTUAL void ActivationLayer::printOutput() {
             if(outputSize == 1) {
                  std::cout << "        " << getOutput(n, plane, 0, 0) << std::endl;
             } else {
-                for(int i = 0; i < std::min(5, outputSize); i++) {
+                for(int i = 0; i < std::min(5, outputSize.height); i++) {
                     std::cout << "      ";
-                    for(int j = 0; j < std::min(5, outputSize); j++) {
+                    for(int j = 0; j < std::min(5, outputSize.width); j++) {
                         std::cout << getOutput(n, plane, i, j) << " ";
                     }
-                    if(outputSize > 5) std::cout << " ... ";
+                    if(outputSize.width > 5) std::cout << " ... ";
                     std::cout << std::endl;
                 }
-                if(outputSize > 5) std::cout << " ... " << std::endl;
+                if(outputSize.height > 5) std::cout << " ... " << std::endl;
             }
             if(numPlanes > 5) std::cout << " ... other planes ... " << std::endl;
         }
@@ -129,7 +129,7 @@ VIRTUAL void ActivationLayer::setBatchSize(int batchSize) {
     gradInputWrapper->createOnDevice();
 }
 VIRTUAL int ActivationLayer::getOutputNumElements() {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL float *ActivationLayer::getOutput() {
     if(outputWrapper->isDeviceDirty()) {
@@ -144,12 +144,12 @@ VIRTUAL bool ActivationLayer::needsBackProp() {
 }
 VIRTUAL int ActivationLayer::getOutputNumElements() const {
 //    int outputSize = inputSize / poolingSize;
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL int ActivationLayer::getOutputCubeSize() const {
-    return numPlanes * outputSize * outputSize;
+    return numPlanes * outputSize.height * outputSize.width;
 }
-VIRTUAL int ActivationLayer::getOutputSize() const {
+VIRTUAL Dimensions ActivationLayer::getOutputSize() const {
     return outputSize;
 }
 VIRTUAL const char *ActivationLayer::getActivationAsCharStar() const {

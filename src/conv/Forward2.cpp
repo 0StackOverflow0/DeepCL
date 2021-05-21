@@ -32,8 +32,8 @@ VIRTUAL void Forward2::forward(int batchSize, CLWrapper *dataWrapper, CLWrapper 
     kernel->input(weightsWrapper);
     kernel->output(outputWrapper);
 //        cout << "square(outputSize) " << square(outputSize) << endl;
-    kernel->localFloats(square(dim.inputSize) );
-    kernel->localFloats(square(dim.filterSize) * dim.inputPlanes);
+    kernel->localFloats(dim.inputSize.height * dim.inputSize.width);
+    kernel->localFloats(dim.filterSize.height * dim.filterSize.width * dim.inputPlanes);
 //    cout << "forward2 globalsize " << globalSize << " workgroupsize " << workgroupsize << endl;
     kernel->run_1d(globalSize, workgroupSize);
     cl->finish();
@@ -49,13 +49,13 @@ VIRTUAL void Forward2::forward(int batchSize, CLWrapper *dataWrapper, CLWrapper 
 Forward2::Forward2(EasyCL *cl, LayerDimensions dim) :
             Forward(cl, dim)
         {
-    if(square(dim.outputSize) > cl->getMaxWorkgroupSize()) {
+    if(dim.outputSize.height * dim.outputSize.width > cl->getMaxWorkgroupSize()) {
         throw runtime_error("cannot use forward2, since outputimagesize * outputimagesize > maxworkgroupsize");
     }
 
     addBias = new AddBias(cl);
 
-    this->workgroupSize = square(dim.outputSize);
+    this->workgroupSize = dim.outputSize.height * dim.outputSize.width;
     // round up to nearest 32, so dont waste threads:
     this->workgroupSize = (( workgroupSize + 32 - 1) / 32) * 32;
     this->numWorkgroups = dim.numFilters;
@@ -86,7 +86,7 @@ Forward2::Forward2(EasyCL *cl, LayerDimensions dim) :
     "    }\n"
     "}\n"
     "\n"
-    "#ifdef gOutputSize // for previous tests that dont define it\n"
+    "#ifdef gOutputWidth // for previous tests that dont define it\n"
     "// workgroup id organized like: [outplane]\n"
     "// local id organized like: [outrow][outcol]\n"
     "// each thread iterates over: [imageid][upstreamplane][filterrow][filtercol]\n"
@@ -110,23 +110,23 @@ Forward2::Forward2(EasyCL *cl, LayerDimensions dim) :
     "    const int outPlane = workgroupId;\n"
     "\n"
     "    const int localId = get_local_id(0);\n"
-    "    const int outputRow = localId / gOutputSize;\n"
-    "    const int outputCol = localId % gOutputSize;\n"
+    "    const int outputRow = localId / gOutputWidth;\n"
+    "    const int outputCol = localId % gOutputWidth;\n"
     "\n"
     "    #if gPadZeros == 1\n"
-    "        const int minu = max(-gHalfFilterSize, -outputRow);\n"
-    "        const int maxu = min(gHalfFilterSize, gOutputSize - 1 - outputRow) - gEven;\n"
-    "        const int minv = max(-gHalfFilterSize, -outputCol);\n"
-    "        const int maxv = min(gHalfFilterSize, gOutputSize - 1 - outputCol) - gEven;\n"
+    "        const int minu = max(-gHalfFilterHeight, -outputRow);\n"
+    "        const int maxu = min(gHalfFilterHeight, gOutputHeight - 1 - outputRow) - gEven;\n"
+    "        const int minv = max(-gHalfFilterWidth, -outputCol);\n"
+    "        const int maxv = min(gHalfFilterWidth, gOutputWidth - 1 - outputCol) - gEven;\n"
     "    #else\n"
-    "        const int minu = -gHalfFilterSize;\n"
-    "        const int maxu = gHalfFilterSize - gEven;\n"
-    "        const int minv = -gHalfFilterSize;\n"
-    "        const int maxv = gHalfFilterSize - gEven;\n"
+    "        const int minu = -gHalfFilterHeight;\n"
+    "        const int maxu = gHalfFilterHeight - gEven;\n"
+    "        const int minv = -gHalfFilterWidth;\n"
+    "        const int maxv = gHalfFilterWidth - gEven;\n"
     "    #endif\n"
     "\n"
     "    {\n"
-    "        const int filterCubeLength = gInputPlanes * gFilterSizeSquared;\n"
+    "        const int filterCubeLength = gInputPlanes * gFilterArea;\n"
     "        copyLocal(_filterCube,\n"
     "                filters + outPlane * filterCubeLength,\n"
     "                filterCubeLength);\n"
@@ -138,22 +138,22 @@ Forward2::Forward2(EasyCL *cl, LayerDimensions dim) :
     "        for (int upstreamPlane = 0; upstreamPlane < gInputPlanes; upstreamPlane++) {\n"
     "            barrier(CLK_LOCAL_MEM_FENCE);\n"
     "            copyLocal(_inputPlane,\n"
-    "                       images + (n * gInputPlanes + upstreamPlane) * gInputSizeSquared,\n"
-    "                       gInputSizeSquared);\n"
+    "                       images + (n * gInputPlanes + upstreamPlane) * gInputArea,\n"
+    "                       gInputArea);\n"
     "            barrier(CLK_LOCAL_MEM_FENCE);\n"
-    "            int filterImageOffset = upstreamPlane * gFilterSizeSquared;\n"
-    "            if (localId < gOutputSizeSquared) {\n"
+    "            int filterImageOffset = upstreamPlane * gFilterArea;\n"
+    "            if (localId < gOutputArea) {\n"
     "                for (int u = minu; u <= maxu; u++) {\n"
     "                    int inputRow = outputRow + u;\n"
     "                    #if gPadZeros == 0\n"
-    "                         inputRow += gHalfFilterSize;\n"
+    "                         inputRow += gHalfFilterHeight;\n"
     "                    #endif\n"
-    "                    int inputimagerowoffset = inputRow * gInputSize;\n"
-    "                    int filterrowoffset = filterImageOffset + (u+gHalfFilterSize) * gFilterSize + gHalfFilterSize;\n"
+    "                    int inputimagerowoffset = inputRow * gInputHeight;\n"
+    "                    int filterrowoffset = filterImageOffset + (u+gHalfFilterHeight) * gFilterHeight + gHalfFilterWidth;\n"
     "                    for (int v = minv; v <= maxv; v++) {\n"
     "                        int inputCol = outputCol + v;\n"
     "                        #if gPadZeros == 0\n"
-    "                             inputCol += gHalfFilterSize;\n"
+    "                             inputCol += gHalfFilterWidth;\n"
     "                        #endif\n"
     "                        sum += _inputPlane[ inputimagerowoffset + inputCol] * _filterCube[ filterrowoffset + v ];\n"
     "                    }\n"
@@ -161,9 +161,9 @@ Forward2::Forward2(EasyCL *cl, LayerDimensions dim) :
     "            }\n"
     "        }\n"
     "        // output are organized like [imageid][filterid][row][col]\n"
-    "        int resultIndex = (n * gNumFilters + outPlane) * gOutputSizeSquared + localId;\n"
-    "        if (localId < gOutputSizeSquared) {\n"
-    "            output[resultIndex ] = sum;\n"
+    "        int resultIndex = (n * gNumFilters + outPlane) * gOutputArea + localId;\n"
+    "        if (localId < gOutputArea) {\n"
+    "            output[ resultIndex ] = sum;\n"
     "        }\n"
     "    }\n"
     "}\n"

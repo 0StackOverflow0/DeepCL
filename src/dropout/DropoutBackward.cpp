@@ -23,13 +23,13 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-STATIC DropoutBackward *DropoutBackward::instance(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) {
+STATIC DropoutBackward *DropoutBackward::instance(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) {
     return new DropoutBackwardGpuNaive(cl, numPlanes, inputSize, dropRatio);
 }
-STATIC DropoutBackward *DropoutBackward::instanceForTest(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) {
+STATIC DropoutBackward *DropoutBackward::instanceForTest(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) {
     return new DropoutBackwardGpuNaive(cl, numPlanes, inputSize, dropRatio);
 }
-STATIC DropoutBackward *DropoutBackward::instanceSpecific(int idx, EasyCL *cl, int numPlanes, int inputSize, float dropRatio) {
+STATIC DropoutBackward *DropoutBackward::instanceSpecific(int idx, EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) {
     if(idx == 0) {
         return new DropoutBackwardCpu(cl, numPlanes, inputSize, dropRatio);
     }
@@ -38,7 +38,7 @@ STATIC DropoutBackward *DropoutBackward::instanceSpecific(int idx, EasyCL *cl, i
     }
     throw runtime_error("DropoutBackward::instanceSpecific, idx not known: " + toString(idx) );
 }
-DropoutBackward::DropoutBackward(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) :
+DropoutBackward::DropoutBackward(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) :
         cl(cl),
         numPlanes(numPlanes),
         inputSize(inputSize),
@@ -50,10 +50,10 @@ DropoutBackward::DropoutBackward(EasyCL *cl, int numPlanes, int inputSize, float
 //    }
 }
 VIRTUAL int DropoutBackward::getInputNumElements(int batchSize) {
-    return batchSize * numPlanes * inputSize * inputSize;
+    return batchSize * numPlanes * inputSize.height * inputSize.width;
 }
 VIRTUAL int DropoutBackward::getOutputNumElements(int batchSize) {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL void DropoutBackward::backward(int batchSize, uchar *mask, float *gradOutput, float *gradInput) {
 //    cout << "DropoutBackward::backward(float *)" << endl;

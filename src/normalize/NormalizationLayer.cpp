@@ -69,9 +69,9 @@ VIRTUAL void NormalizationLayer::printOutput() const {
         std::cout << "NormalizationLayer n " << n << ":" << std::endl;
         for(int plane = 0; plane < std::min(5, outputPlanes); plane++) {
             if(outputPlanes > 1) std::cout << "    plane " << plane << ":" << std::endl;
-            for(int i = 0; i < std::min(5, outputSize); i++) {
+            for(int i = 0; i < std::min(5, outputSize.height); i++) {
                 std::cout << "      ";
-                for(int j = 0; j < std::min(5, outputSize); j++) {
+                for(int j = 0; j < std::min(5, outputSize.width); j++) {
                     std::cout << getResult(n, plane, i, j) << " ";
 //output[
 //                            n * numPlanes * imageSize*imageSize +
@@ -79,10 +79,10 @@ VIRTUAL void NormalizationLayer::printOutput() const {
 //                            i * imageSize +
 //                            j ] << " ";
                 }
-                if(outputSize > 5) std::cout << " ... ";
+                if(outputSize.width > 5) std::cout << " ... ";
                 std::cout << std::endl;
             }
-            if(outputSize > 5) std::cout << " ... " << std::endl;
+            if(outputSize.height > 5) std::cout << " ... " << std::endl;
         }
         if(outputPlanes > 5) std::cout << "   ... other planes ... " << std::endl;
     }
@@ -116,14 +116,14 @@ VIRTUAL void NormalizationLayer::forward() {
 VIRTUAL void NormalizationLayer::backward(float learningRate, float const *gradOutput) {
   // do nothing...
 }
-VIRTUAL int NormalizationLayer::getOutputSize() const {
+VIRTUAL Dimensions NormalizationLayer::getOutputSize() const {
     return outputSize;
 }
 VIRTUAL int NormalizationLayer::getOutputPlanes() const {
     return outputPlanes;
 }
 VIRTUAL int NormalizationLayer::getOutputCubeSize() const {
-    return outputPlanes * outputSize * outputSize;
+    return outputPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL int NormalizationLayer::getOutputNumElements() const {
     return batchSize * getOutputCubeSize();
@@ -132,7 +132,7 @@ VIRTUAL std::string NormalizationLayer::toString() {
     return toString();
 }
 VIRTUAL std::string NormalizationLayer::asString() const {
-    return std::string("") + "NormalizationLayer{ outputPlanes=" + ::toString(outputPlanes) + " outputSize=" +  ::toString(outputSize) + " translate=" + ::toString(translate) + 
+    return std::string("") + "NormalizationLayer{ outputPlanes=" + ::toString(outputPlanes) + " outputHeight=" +  ::toString(outputSize.height) + " outputWidth=" + ::toString(outputSize.width) + " translate=" + ::toString(translate) +
         " scale=" + ::toString(scale) + " }";
 }
 

@@ -32,7 +32,7 @@ VIRTUAL int LossLayer::getOutputNumElements() const {
 VIRTUAL int LossLayer::getOutputCubeSize() const {
     return previousLayer->getOutputCubeSize();
 }
-VIRTUAL int LossLayer::getOutputSize() const {
+VIRTUAL Dimensions LossLayer::getOutputSize() const {
     return previousLayer->getOutputSize();
 }
 VIRTUAL int LossLayer::getOutputPlanes() const {

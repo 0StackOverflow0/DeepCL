@@ -21,9 +21,9 @@ class RandomTranslations : public Layer {
 public:
     const int translateSize;
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
 
-    const int outputSize;
+    const Dimensions outputSize;
 
     float *output;
 
@@ -43,7 +43,7 @@ public:
     VIRTUAL float *getOutput();
     VIRTUAL bool needsBackProp();
     VIRTUAL int getOutputNumElements() const;
-    VIRTUAL int getOutputSize() const;
+    VIRTUAL Dimensions getOutputSize() const;
     VIRTUAL int getOutputPlanes() const;
     VIRTUAL int getTranslationSize() const;
     VIRTUAL int getOutputCubeSize() const;

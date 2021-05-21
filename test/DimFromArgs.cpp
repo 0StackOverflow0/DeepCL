@@ -18,9 +18,11 @@ using namespace std;
 void DimFromArgs::arg( LayerDimensions *p_dim ) {
     TestArgsParser::arg( "inputplanes", &(p_dim->inputPlanes) );
     TestArgsParser::arg( "numinputplanes", &(p_dim->inputPlanes) );
-    TestArgsParser::arg( "inputsize", &(p_dim->inputSize) );
+    TestArgsParser::arg( "inputheight", &(p_dim->inputSize.height) );
+    TestArgsParser::arg("inputwidth", &(p_dim->inputSize.width));
     TestArgsParser::arg( "numfilters", &(p_dim->numFilters) );
-    TestArgsParser::arg( "filtersize", &(p_dim->filterSize) );
+    TestArgsParser::arg( "filterheight", &(p_dim->filterSize.height) );
+    TestArgsParser::arg("filterwidth", &(p_dim->filterSize.width));
     TestArgsParser::arg( "padzeros", &(p_dim->padZeros) );
     TestArgsParser::arg( "biased", &(p_dim->biased) );
 //    cout << "DimFromArgs::arg() " << *p_dim << endl;

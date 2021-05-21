@@ -18,8 +18,8 @@ TestArgsParser::TestArgsParser() :
     argc(DeepCLGtestGlobals::instance()->argc),
     argv(DeepCLGtestGlobals::instance()->argv) {
 }
-void TestArgsParser::_arg( std::string key, int *p_value ) {
-    args.push_back( new ArgInt( key, p_value ) );
+void TestArgsParser::_arg( std::string key, const int *p_value ) {
+    args.push_back( new ArgInt( key, (int*)p_value ) );
 }
 void TestArgsParser::_arg( std::string key, std::string *p_value ) {
     args.push_back( new ArgString( key, p_value ) );
@@ -96,7 +96,7 @@ TestArgsParser *TestArgsParser::instance() {
     static TestArgsParser *thisInstance = new TestArgsParser();
     return thisInstance;
 }
-void TestArgsParser::arg( std::string key, int *p_value ) {
+void TestArgsParser::arg( std::string key, const int *p_value ) {
     instance()->_arg( key, p_value );
 }
 void TestArgsParser::arg( std::string key, std::string *p_value ) {

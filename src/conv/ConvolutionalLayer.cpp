@@ -55,17 +55,14 @@ ConvolutionalLayer::ConvolutionalLayer(EasyCL *cl, Layer *previousLayer, Convolu
     dim.setInputPlanes(previousLayer->getOutputPlanes())
         .setInputSize(previousLayer->getOutputSize())
         .setNumFilters(maker->_numFilters)
-        .setFilterSize(maker->_filterSize)
+        .setFilterSize(!previousLayer->getOutputSize().single ? maker->_filterSize : Dimensions(maker->_filterSize.width, 1))
         .setBiased(maker->_biased)
         .setPadZeros(maker->_padZeros);
-    if(dim.padZeros && dim.filterSize % 2 == 0) {
+
+    if(dim.padZeros && (dim.filterSize.height % 2 == 0 || dim.filterSize.width % 2 == 0)) {
         throw std::runtime_error("filter size must be an odd number, if padZeros is true, so either turn off padZeros, or choose a different filtersize :-)");
     }
-//    weightsTrainer = new SGD(cl, getWeightsSize()); // so it doesnt crash...
-//    biasTrainer = new SGD(cl, getBiasSize());
 
-//    dim = LayerDimensions(upstreamNumPlanes, upstreamImageSize, 
-//        numPlanes, filterSize, padZeros, biased);
     forwardImpl = Forward::instance(cl, dim);
     backpropWeightsImpl = BackpropWeights::instance(cl, dim);
     if(previousLayer->needsBackProp()) {
@@ -73,8 +70,8 @@ ConvolutionalLayer::ConvolutionalLayer(EasyCL *cl, Layer *previousLayer, Convolu
     }
 
     if(dim.filterSize > dim.inputSize) {
-            throw std::runtime_error("filter size cannot be larger than upstream image size: " + toString(dim.filterSize) +
-                " > " + toString(dim.inputSize));
+            throw std::runtime_error("filter size cannot be larger than upstream image size: " + toString(dim.filterSize.height) + "x" + toString(dim.filterSize.width) +
+                " > " + toString(dim.inputSize.height) + "x" + toString(dim.inputSize.width));
     }
     weights = new float[ getWeightsSize() ];
     if(dim.biased) {
@@ -187,19 +184,22 @@ VIRTUAL int ConvolutionalLayer::getOutputNumElements() const {
 VIRTUAL int ConvolutionalLayer::getOutputPlanes() const {
     return dim.numFilters;
 }
-VIRTUAL int ConvolutionalLayer::getFilterSize() const {
+VIRTUAL Dimensions ConvolutionalLayer::getFilterSize() const {
     return dim.filterSize;
+}
+VIRTUAL int ConvolutionalLayer::getFilterStride() const {
+    return dim.stride;
 }
 VIRTUAL bool ConvolutionalLayer::getPadZeros() const {
     return dim.padZeros;
 }
-VIRTUAL int ConvolutionalLayer::getOutputSize() const {
+VIRTUAL Dimensions ConvolutionalLayer::getOutputSize() const {
     return dim.outputSize;
 }
 // filters are organized like [filterid][plane][row][col]
 void ConvolutionalLayer::randomizeWeights(WeightsInitializer *weightsInitializer) {
 //        std::cout << "convolutional layer randomzing weights" << std::endl;
-    int fanin = dim.inputPlanes * dim.filterSize * dim.filterSize;
+    int fanin = dim.inputPlanes * dim.filterSize.height * dim.filterSize.width;
     if(dim.biased) {
         fanin++;
     }
@@ -227,9 +227,9 @@ VIRTUAL void ConvolutionalLayer::printWeights() {
        }
        for(int plane = 0; plane < std::min(5, dim.inputPlanes); plane++) {
            if(dim.inputPlanes > 1) std::cout << "    inplane " << plane << std::endl;
-            for(int i = 0; i < std::min(5, dim.filterSize); i++) {
+            for(int i = 0; i < std::min(5, dim.filterSize.height); i++) {
                 std::cout << "      ";
-                for(int j = 0; j < std::min(5, dim.filterSize); j++) {
+                for(int j = 0; j < std::min(5, dim.filterSize.width); j++) {
                    std::cout << getWeight(filter, plane, i, j) << " ";
                 }
                 if(dim.filterSize > 5) {
@@ -259,9 +259,9 @@ VIRTUAL void ConvolutionalLayer::printOutput() {
             if(dim.outputSize == 1) {
                  std::cout << "        " << getOutput(n, plane, 0, 0) << std::endl;
             } else {
-                for(int i = 0; i < std::min(5, dim.outputSize); i++) {
+                for(int i = 0; i < std::min(5, dim.outputSize.height); i++) {
                     std::cout << "      ";
-                    for(int j = 0; j < std::min(5, dim.outputSize); j++) {
+                    for(int j = 0; j < std::min(5, dim.outputSize.width); j++) {
                         std::cout << getOutput(n, plane, i, j) << " ";
                     }
                     if(dim.outputSize > 5) std::cout << " ... ";
@@ -342,7 +342,7 @@ VIRTUAL void ConvolutionalLayer::initBias(float const*bias) {
     biasWrapper->copyToDevice();
 }
 VIRTUAL int ConvolutionalLayer::getWeightsSize() const {
-    return dim.numFilters * dim.inputPlanes * dim.filterSize * dim.filterSize;
+    return dim.numFilters * dim.inputPlanes * dim.filterSize.height * dim.filterSize.width;
 }
 VIRTUAL int ConvolutionalLayer::getBiasSize() const {
     if(dim.biased) {

@@ -20,7 +20,7 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-DropoutForwardCpu::DropoutForwardCpu(EasyCL *cl, int numPlanes, int inputSize, float dropRatio) :
+DropoutForwardCpu::DropoutForwardCpu(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio) :
         DropoutForward(cl, numPlanes, inputSize, dropRatio) {
 }
 VIRTUAL void DropoutForwardCpu::forward(int batchSize, CLWrapper *masksWrapper, CLWrapper *inputWrapper, CLWrapper *outputWrapper) {
@@ -45,7 +45,7 @@ VIRTUAL void DropoutForwardCpu::forward(int batchSize, unsigned char *masks, flo
 //    float *output = new float[ getOutputNumElements(batchSize) ];
 //    cout << "DropoutForwardCpu::forward(float *)" << endl;
     StatefulTimer::instance()->timeCheck("DropoutForwardCpu::forward start");
-    int totalLinearSize = batchSize * numPlanes * inputSize * inputSize;
+    int totalLinearSize = batchSize * numPlanes * inputSize.height * inputSize.width;
 //    float inverseDropRatio = 1.0f / dropRatio; // since multiply faster than divide, just divide once
     for(int i = 0; i < totalLinearSize; i++) {
         output[i] = masks[i] == 1 ? input[i] : 0;

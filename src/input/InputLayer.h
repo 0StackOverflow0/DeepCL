@@ -22,7 +22,7 @@ public:
     int allocatedSize;
 
     const int outputPlanes;
-    const int outputSize;
+    const Dimensions outputSize;
 
     float const*input; // we dont own this
     float *output; // we own this :-)
@@ -30,8 +30,8 @@ public:
     inline int getOutputIndex(int n, int outPlane, int outRow, int outCol) const {
         return (( n
             * outputPlanes + outPlane)
-            * outputSize + outRow)
-            * outputSize + outCol;
+            * outputSize.height + outRow)
+            * outputSize.width + outCol;
     }
     inline float getOutput(int n, int outPlane, int outRow, int outCol) const {
         return output[ getOutputIndex(n,outPlane, outRow, outCol) ];
@@ -54,7 +54,7 @@ public:
     VIRTUAL bool needErrorsBackprop();
     VIRTUAL void setBatchSize(int batchSize);
     VIRTUAL void forward();
-    VIRTUAL int getOutputSize() const;
+    VIRTUAL Dimensions getOutputSize() const;
     VIRTUAL int getOutputPlanes() const;
     VIRTUAL int getOutputCubeSize() const;
     VIRTUAL int getOutputNumElements() const;

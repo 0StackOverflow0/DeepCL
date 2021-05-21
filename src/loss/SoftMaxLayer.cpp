@@ -22,7 +22,7 @@ SoftMaxLayer::SoftMaxLayer(Layer *previousLayer, SoftMaxMaker *maker) :
         perPlane(maker->_perPlane),
         imageSize(previousLayer->getOutputSize()),
         numPlanes(previousLayer->getOutputPlanes()),
-        imageSizeSquared(previousLayer->getOutputSize() * previousLayer->getOutputSize()),
+        imageSizeSquared(previousLayer->getOutputSize().height * previousLayer->getOutputSize().width),
         output(0),
         gradInput(0),
         allocatedSize(0),
@@ -339,6 +339,6 @@ VIRTUAL void SoftMaxLayer::getLabels(int *labels) { // need to allocate labels a
 //}
 VIRTUAL std::string SoftMaxLayer::asString() const {
     return "SoftMaxLayer{ perPlane=" + toString(perPlane) + " numPlanes=" + toString(numPlanes)
-        + " imageSize=" + toString(imageSize) + " }";
+        + " imageHeight=" + toString(imageSize.height) + " imageWidth=" + toString(imageSize.width) + " }";
 }
 

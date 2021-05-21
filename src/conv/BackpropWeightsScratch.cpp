@@ -24,12 +24,12 @@ VIRTUAL BackpropWeightsScratch::~BackpropWeightsScratch() {
 VIRTUAL void BackpropWeightsScratch::calcGradWeights(int batchSize, CLWrapper *gradOutputWrapper, CLWrapper *imagesWrapper, CLWrapper *gradWeightsWrapper, CLWrapper *gradBiasWrapper) {
     StatefulTimer::instance()->timeCheck("BackpropWeightsScratch start");
 
-    int workgroupsize = std::max(32, square(dim.filterSize) ); // no point in wasting cores...
+    int workgroupsize = std::max(32, dim.filterSize.height * dim.filterSize.width); // no point in wasting cores...
     int numWorkgroups = dim.inputPlanes * dim.numFilters;
     int globalSize = workgroupsize * numWorkgroups;
     globalSize = (( globalSize + workgroupsize - 1) / workgroupsize) * workgroupsize;
 
-    int localMemRequiredKB = (square(dim.outputSize) * 4 + square(dim.inputSize) * 4) / 1024 + 1;
+    int localMemRequiredKB = (dim.outputSize.height * dim.outputSize.width * 4 + dim.inputSize.height * dim.inputSize.width * 4) / 1024 + 1;
     if(localMemRequiredKB >= cl->getLocalMemorySizeKB()) {
         throw runtime_error("local memory too small to use this kernel on this device.  Need: " + 
             toString(localMemRequiredKB) + "KB, but only have: " + 
@@ -48,8 +48,8 @@ VIRTUAL void BackpropWeightsScratch::calcGradWeights(int batchSize, CLWrapper *g
         kernel->inout(gradBiasWrapper);
     }
     kernel
-        ->localFloats(square(dim.outputSize) )
-        ->localFloats(square(dim.inputSize) );
+        ->localFloats(dim.outputSize.height * dim.outputSize.width)
+        ->localFloats(dim.inputSize.height * dim.inputSize.width);
 
     kernel->run_1d(globalSize, workgroupsize);
 
@@ -60,7 +60,7 @@ VIRTUAL void BackpropWeightsScratch::calcGradWeights(int batchSize, CLWrapper *g
 BackpropWeightsScratch::BackpropWeightsScratch(EasyCL *cl, LayerDimensions dim) :
         BackpropWeights(cl, dim)
             {
-    if(square(dim.filterSize) > cl->getMaxWorkgroupSize()) {
+    if(dim.filterSize.height * dim.filterSize.width > cl->getMaxWorkgroupSize()) {
         throw runtime_error("cannot use BackpropWeightsScratch, since filterSize * filterSize > maxworkgroupsize");
     }
 
@@ -126,8 +126,8 @@ BackpropWeightsScratch::BackpropWeightsScratch(EasyCL *cl, LayerDimensions dim) 
     "// workgroupId: [outputPlane][inputPlane]\n"
     "// localId: [filterRow][filterCol]\n"
     "// per-thread iteration: [n][outputRow][outputCol]\n"
-    "// local: errorimage: outputSize * outputSize\n"
-    "//        imageimage: inputSize * inputSize\n"
+    "// local: errorimage: outputHeight * outputWidth\n"
+    "//        imageimage: inputHeight * inputWidth\n"
     "void kernel backprop_floats_withscratch_dobias(\n"
     "        const float learningRateMultiplier, const int batchSize,\n"
     "         global const float *gradOutput, global const float *images,\n"
@@ -137,8 +137,8 @@ BackpropWeightsScratch::BackpropWeightsScratch(EasyCL *cl, LayerDimensions dim) 
     "        #endif\n"
     "        local float *_errorImage, local float *_imageImage\n"
     " ) {\n"
-    "    const int filterRow = localId / gFilterSize;\n"
-    "    const int filterCol = localId % gFilterSize;\n"
+    "    const int filterRow = localId / gFilterWidth;\n"
+    "    const int filterCol = localId % gFilterWidth;\n"
     "\n"
     "    #define outPlane (workgroupId / gInputPlanes)\n"
     "    #define upstreamPlane (workgroupId % gInputPlanes)\n"
@@ -151,22 +151,22 @@ BackpropWeightsScratch::BackpropWeightsScratch(EasyCL *cl, LayerDimensions dim) 
     "#endif\n"
     "    for (int n = 0; n < batchSize; n++) {\n"
     "        barrier(CLK_LOCAL_MEM_FENCE);\n"
-    "        copyLocal(_imageImage, images + (n * gInputPlanes + upstreamPlane) * gInputSizeSquared, gInputSizeSquared);\n"
-    "        copyLocal(_errorImage, gradOutput + (n * gNumFilters + outPlane) * gOutputSizeSquared, gOutputSizeSquared);\n"
+    "        copyLocal(_imageImage, images + (n * gInputPlanes + upstreamPlane) * gInputArea, gInputArea);\n"
+    "        copyLocal(_errorImage, gradOutput + (n * gNumFilters + outPlane) * gOutputArea, gOutputArea);\n"
     "        barrier(CLK_LOCAL_MEM_FENCE);\n"
-    "        if (localId < gFilterSizeSquared) {\n"
-    "            for (int outRow = 0; outRow < gOutputSize; outRow++) {\n"
-    "                int upstreamRow = outRow - gMargin + filterRow;\n"
-    "                for (int outCol = 0; outCol < gOutputSize; outCol++) {\n"
-    "                    const int upstreamCol = outCol - gMargin + filterCol;\n"
-    "                    #define proceed (upstreamRow >= 0 && upstreamCol >= 0 && upstreamRow < gInputSize && upstreamCol < gInputSize)\n"
+    "        if (localId < gFilterArea) {\n"
+    "            for (int outRow = 0; outRow < gOutputHeight; outRow++) {\n"
+    "                int upstreamRow = outRow - gMarginHeight + filterRow;\n"
+    "                for (int outCol = 0; outCol < gOutputWidth; outCol++) {\n"
+    "                    const int upstreamCol = outCol - gMarginWidth + filterCol;\n"
+    "                    #define proceed (upstreamRow >= 0 && upstreamCol >= 0 && upstreamRow < gInputHeight && upstreamCol < gInputWidth)\n"
     "                    if (proceed) {\n"
     "                        // these defines reduce register pressure, compared to const\n"
     "                        // giving a 40% speedup on nvidia :-)\n"
-    "                        #define resultIndex (outRow * gOutputSize + outCol)\n"
+    "                        #define resultIndex (outRow * gOutputWidth + outCol)\n"
     "                        #define error (_errorImage[resultIndex])\n"
     "                        //const float error = _errorImage[resultIndex];\n"
-    "                        #define upstreamDataIndex (upstreamRow * gInputSize + upstreamCol)\n"
+    "                        #define upstreamDataIndex (upstreamRow * gInputWidth + upstreamCol)\n"
     "                        #define upstreamResult (_imageImage[upstreamDataIndex])\n"
     "                        thiswchange += upstreamResult * error;\n"
     "    #ifdef BIASED\n"
@@ -177,11 +177,11 @@ BackpropWeightsScratch::BackpropWeightsScratch(EasyCL *cl, LayerDimensions dim) 
     "            }\n"
     "        }\n"
     "    }\n"
-    "    if (localId < gFilterSizeSquared) {\n"
-    "        gradWeights[ workgroupId * gFilterSizeSquared + localId ] = learningRateMultiplier * thiswchange;\n"
+    "    if (localId < gFilterArea) {\n"
+    "        gradWeights[ workgroupId * gFilterArea + localId ] = learningRateMultiplier * thiswchange;\n"
     "    }\n"
     "#ifdef BIASED\n"
-    "    #define writeBias (upstreamPlane == 0 && filterRow == gMargin && filterCol == gMargin)\n"
+    "    #define writeBias (upstreamPlane == 0 && filterRow == gMarginHeight && filterCol == gMarginWidth)\n"
     "    if (writeBias) {\n"
     "        gradBiasWeights[outPlane] = learningRateMultiplier * thisbiaschange;\n"
     "    }\n"

@@ -30,7 +30,7 @@ public:
     // generated, using cog:
     VIRTUAL ~AddBias();
     VIRTUAL void forward(
-    int batchSize, int numFilters, int outputSize,
+    int batchSize, int numFilters, Dimensions outputSize,
     CLWrapper *outputWrapper,
     CLWrapper *biasWrapper
     );

@@ -20,23 +20,23 @@ public:
 
     const bool padZeros;
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
     const int poolingSize;
 
-    const int outputSize;
+    const Dimensions outputSize;
 
     virtual ~PoolingForward() {}
     inline int getInputIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * inputSize + row)
-            * inputSize + col;
+            * inputSize.height + row)
+            * inputSize.width + col;
     }
     inline int getResultIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * outputSize + row)
-            * outputSize + col;
+            * outputSize.height + row)
+            * outputSize.width + col;
     }
 
     // [[[cog
@@ -44,10 +44,10 @@ public:
     // cog_addheaders.add()
     // ]]]
     // generated, using cog:
-    PoolingForward(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize);
-    STATIC PoolingForward *instance(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize);
-    STATIC PoolingForward *instanceForTest(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize);
-    STATIC PoolingForward *instanceSpecific(int idx, EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize);
+    PoolingForward(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize);
+    STATIC PoolingForward *instance(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize);
+    STATIC PoolingForward *instanceForTest(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize);
+    STATIC PoolingForward *instanceSpecific(int idx, EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize);
     VIRTUAL void forward(int batchSize, CLWrapper *inputData, CLWrapper *selectors, CLWrapper *outputData);
     VIRTUAL void forward(int batchSize, float *input, int *selectors, float *output);
     VIRTUAL int getInputNumElements(int batchSize);

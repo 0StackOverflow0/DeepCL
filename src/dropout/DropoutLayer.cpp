@@ -110,6 +110,7 @@ VIRTUAL void DropoutLayer::setBatchSize(int batchSize) {
     this->batchSize = batchSize;
     this->allocatedSize = batchSize;
     masks = new unsigned char[ getOutputNumElements() ];
+    generateMasks();
     maskWrapper = cl->wrap(getOutputNumElements(), masks);
     output = new float[ getOutputNumElements() ];
     outputWrapper = cl->wrap(getOutputNumElements(), output);
@@ -119,7 +120,7 @@ VIRTUAL void DropoutLayer::setBatchSize(int batchSize) {
     gradInputWrapper->createOnDevice();
 }
 VIRTUAL int DropoutLayer::getOutputNumElements() {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 VIRTUAL float *DropoutLayer::getOutput() {
     if(outputWrapper->isDeviceDirty()) {
@@ -135,9 +136,9 @@ VIRTUAL bool DropoutLayer::needsBackProp() {
 }
 VIRTUAL int DropoutLayer::getOutputNumElements() const {
 //    int outputSize = inputSize / dropoutSize;
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
-VIRTUAL int DropoutLayer::getOutputSize() const {
+VIRTUAL Dimensions DropoutLayer::getOutputSize() const {
     return outputSize;
 }
 VIRTUAL int DropoutLayer::getOutputPlanes() const {

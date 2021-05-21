@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+#include "DeepCLDllExport.h"
+
 #include "util/StatefulTimer.h"
 #include "conv/AddBias.h"
 
@@ -19,17 +21,17 @@ using namespace std;
 VIRTUAL AddBias::~AddBias() {
 }
 VIRTUAL void AddBias::forward(
-        int batchSize, int numFilters, int outputSize,
+        int batchSize, int numFilters, Dimensions outputSize,
         CLWrapper *outputWrapper,
         CLWrapper *biasWrapper
             ) {
     StatefulTimer::timeCheck("AddBias::forward begin");
 
-    kernel->in(batchSize * numFilters * outputSize * outputSize)
+    kernel->in(batchSize * numFilters * outputSize.height * outputSize.width)
         ->in(numFilters)
-        ->in(outputSize * outputSize)
+        ->in(outputSize.height * outputSize.width)
         ->inout(outputWrapper)->in(biasWrapper);
-    int globalSize = batchSize * numFilters * outputSize * outputSize;
+    int globalSize = batchSize * numFilters * outputSize.height * outputSize.width;
     int workgroupSize = 64;
     int numWorkgroups = (globalSize + workgroupSize - 1) / workgroupSize;
     kernel->run_1d(numWorkgroups * workgroupSize, workgroupSize);

@@ -31,7 +31,7 @@ VIRTUAL void PoolingForwardGpuNaive::forward(int batchSize, CLWrapper *inputWrap
     StatefulTimer::instance()->timeCheck("PoolingForwardGpuNaive::forward start");
 
     kernel->input(batchSize)->input(inputWrapper)->output(selectorsWrapper)->output(outputWrapper);
-    int globalSize = batchSize * numPlanes * outputSize * outputSize;
+    int globalSize = batchSize * numPlanes * outputSize.height * outputSize.width;
     int workgroupsize = cl->getMaxWorkgroupSize();
     globalSize = (( globalSize + workgroupsize - 1) / workgroupsize) * workgroupsize;
 //    cout << "PoolingForwardGpuNaive::forward batchsize=" << batchSize << " g=" << globalSize << " w=" << workgroupsize << endl;
@@ -43,13 +43,15 @@ VIRTUAL void PoolingForwardGpuNaive::forward(int batchSize, CLWrapper *inputWrap
 
     StatefulTimer::instance()->timeCheck("PoolingForwardGpuNaive::forward end");
 }
-PoolingForwardGpuNaive::PoolingForwardGpuNaive(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) :
+PoolingForwardGpuNaive::PoolingForwardGpuNaive(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) :
         PoolingForward(cl, padZeros, numPlanes, inputSize, poolingSize) {
     string options = "";
-    options += " -DgOutputSize=" + toString(outputSize);
-    options += " -DgOutputSizeSquared=" + toString(outputSize * outputSize);
-    options += " -DgInputSize=" + toString(inputSize);
-    options += " -DgInputSizeSquared=" + toString(inputSize * inputSize);
+    options += " -DgOutputHeight=" + toString(outputSize.height);
+    options += " -DgOutputWidth=" + toString(outputSize.width);
+    options += " -DgOutputArea=" + toString(outputSize.height * outputSize.width);
+    options += " -DgInputHeight=" + toString(inputSize.height);
+    options += " -DgInputWidth=" + toString(inputSize.width);
+    options += " -DgInputArea=" + toString(inputSize.height * inputSize.width);
     options += " -DgPoolingSize=" + toString(poolingSize);
     options += " -DgNumPlanes=" + toString(numPlanes);
 
@@ -71,11 +73,11 @@ PoolingForwardGpuNaive::PoolingForwardGpuNaive(EasyCL *cl, bool padZeros, int nu
     "kernel void forwardNaive(const int batchSize, global const float *input, global int *selectors, global float *output) {\n"
     "    const int globalId = get_global_id(0);\n"
     "\n"
-    "    const int intraImageOffset = globalId % gOutputSizeSquared;\n"
-    "    const int outputRow = intraImageOffset / gOutputSize;\n"
-    "    const int outputCol = intraImageOffset % gOutputSize;\n"
+    "    const int intraImageOffset = globalId % gOutputArea;\n"
+    "    const int outputRow = intraImageOffset / gOutputWidth;\n"
+    "    const int outputCol = intraImageOffset % gOutputWidth;\n"
     "\n"
-    "    const int image2dIdx = globalId / gOutputSizeSquared;\n"
+    "    const int image2dIdx = globalId / gOutputArea;\n"
     "    const int plane = image2dIdx % gNumPlanes;\n"
     "    const int n = image2dIdx / gNumPlanes;\n"
     "\n"
@@ -85,15 +87,15 @@ PoolingForwardGpuNaive::PoolingForwardGpuNaive(EasyCL *cl, bool padZeros, int nu
     "\n"
     "    const int inputRow = outputRow * gPoolingSize;\n"
     "    const int inputCol = outputCol * gPoolingSize;\n"
-    "    const int inputImageOffset = (n * gNumPlanes + plane) * gInputSizeSquared;\n"
+    "    const int inputImageOffset = (n * gNumPlanes + plane) * gInputArea;\n"
     "    int selector = 0;\n"
-    "    int poolInputOffset = inputImageOffset + inputRow * gInputSize + inputCol;\n"
+    "    int poolInputOffset = inputImageOffset + inputRow * gInputWidth + inputCol;\n"
     "    float maxValue = input[ poolInputOffset ];\n"
     "    for (int dRow = 0; dRow < gPoolingSize; dRow++) {\n"
     "        for (int dCol = 0; dCol < gPoolingSize; dCol++) {\n"
-    "            bool process = (inputRow + dRow < gInputSize) && (inputCol + dCol < gInputSize);\n"
+    "            bool process = (inputRow + dRow < gInputHeight) && (inputCol + dCol < gInputWidth);\n"
     "            if (process) {\n"
-    "                float thisValue = input[ poolInputOffset + dRow * gInputSize + dCol ];\n"
+    "                float thisValue = input[ poolInputOffset + dRow * gInputWidth + dCol ];\n"
     "                if (thisValue > maxValue) {\n"
     "                    maxValue = thisValue;\n"
     "                    selector = dRow * gPoolingSize + dCol;\n"

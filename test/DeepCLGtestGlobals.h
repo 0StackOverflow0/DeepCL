@@ -18,3 +18,4 @@ public:
 
 EasyCL *DeepCLGtestGlobals_createEasyCL();
 
+EasyCL *DeepCLGtestGlobals_createEasyCL_Cpu();

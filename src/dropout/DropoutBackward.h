@@ -19,23 +19,23 @@ public:
     EasyCL *cl;
 
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
     const float dropRatio;
 
-    const int outputSize;
+    const Dimensions outputSize;
 
     virtual ~DropoutBackward() {}
     inline int getInputIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * inputSize + row)
-            * inputSize + col;
+            * inputSize.height + row)
+            * inputSize.width + col;
     }
     inline int getResultIndex(int n, int plane, int row, int col) {
         return (( n
             * numPlanes + plane)
-            * outputSize + row)
-            * outputSize + col;
+            * outputSize.height + row)
+            * outputSize.width + col;
     }
 
     // [[[cog
@@ -43,10 +43,10 @@ public:
     // cog_addheaders.add()
     // ]]]
     // generated, using cog:
-    STATIC DropoutBackward *instance(EasyCL *cl, int numPlanes, int inputSize, float dropRatio);
-    STATIC DropoutBackward *instanceForTest(EasyCL *cl, int numPlanes, int inputSize, float dropRatio);
-    STATIC DropoutBackward *instanceSpecific(int idx, EasyCL *cl, int numPlanes, int inputSize, float dropRatio);
-    DropoutBackward(EasyCL *cl, int numPlanes, int inputSize, float dropRatio);
+    STATIC DropoutBackward *instance(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio);
+    STATIC DropoutBackward *instanceForTest(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio);
+    STATIC DropoutBackward *instanceSpecific(int idx, EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio);
+    DropoutBackward(EasyCL *cl, int numPlanes, Dimensions inputSize, float dropRatio);
     VIRTUAL int getInputNumElements(int batchSize);
     VIRTUAL int getOutputNumElements(int batchSize);
     VIRTUAL void backward(int batchSize, uchar *mask, float *gradOutput, float *gradInput);

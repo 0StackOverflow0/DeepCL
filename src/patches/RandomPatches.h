@@ -19,11 +19,11 @@ class RandomPatchesMaker;
 
 class RandomPatches : public Layer {
 public:
-    const int patchSize;
+    const Dimensions patchSize;
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
 
-    const int outputSize;
+    const Dimensions outputSize;
 
     float *output;
 
@@ -43,7 +43,7 @@ public:
     VIRTUAL float *getOutput();
     VIRTUAL bool needsBackProp();
     VIRTUAL int getOutputNumElements() const;
-    VIRTUAL int getOutputSize() const;
+    VIRTUAL Dimensions getOutputSize() const;
     VIRTUAL int getOutputPlanes() const;
     VIRTUAL int getPersistSize(int version) const;
     VIRTUAL bool providesGradInputWrapper() const;

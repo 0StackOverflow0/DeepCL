@@ -22,7 +22,7 @@ class SoftMaxMaker;
 class SoftMaxLayer : public LossLayer, public IAcceptsLabels {
 public:
     const bool perPlane;
-    const int imageSize;
+    const Dimensions imageSize;
     const int numPlanes;
     const int imageSizeSquared;
 

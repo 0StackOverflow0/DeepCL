@@ -17,6 +17,32 @@ using namespace std;
 
 namespace testpoolingforward {
 
+TEST( testpoolingforward, basic_1d ) {
+    int batchSize = 1;
+    int numPlanes = 1;
+    Dimensions imageSize(4, 1);
+    int poolingSize = 2;
+    EasyCL* cl = DeepCLGtestGlobals_createEasyCL();
+    PoolingForward* poolingForward = PoolingForward::instanceForTest(cl, false, numPlanes, imageSize, poolingSize);
+    float data[] = { 3, 8, 4, 1 };
+    int outputNumElements = poolingForward->getOutputNumElements(batchSize);
+    int* selectors = new int[outputNumElements];
+    float* output = new float[outputNumElements];
+
+    poolingForward->forward(batchSize, data, selectors, output);
+
+    EXPECT_EQ(selectors[0], 1);
+    EXPECT_EQ(selectors[1], 0);
+
+    EXPECT_EQ(output[0], 8);
+    EXPECT_EQ(output[1], 4);
+
+    delete poolingForward;
+    delete[] selectors;
+    delete[] output;
+    delete cl;
+}
+
 TEST( testpoolingforward, basic ) {
     int batchSize = 1;
     int numPlanes = 1;

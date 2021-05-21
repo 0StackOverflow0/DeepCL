@@ -20,25 +20,25 @@ using namespace std;
 #undef STATIC
 #define STATIC
 
-PoolingForward::PoolingForward(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) :
+PoolingForward::PoolingForward(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) :
         cl(cl),
         padZeros(padZeros),
         numPlanes(numPlanes),
         inputSize(inputSize),
         poolingSize(poolingSize),
-        outputSize(padZeros ? (inputSize + poolingSize - 1) / poolingSize : inputSize / poolingSize) {
+        outputSize(padZeros ? (inputSize + (poolingSize - 1)) / poolingSize : inputSize / poolingSize) {
 //    if(inputSize % poolingSize != 0) {
 //        throw runtime_error("inputSize should be an exact multiple of poolingsize: " + toString(inputSize) + " " + toString(poolingSize) );
 //    }
 }
-STATIC PoolingForward *PoolingForward::instance(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) {
+STATIC PoolingForward *PoolingForward::instance(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) {
     return new PoolingForwardGpuNaive(cl, padZeros, numPlanes, inputSize, poolingSize);
 //    return new PoolingForwardCpu(cl, padZeros, numPlanes, inputSize, poolingSize);
 }
-STATIC PoolingForward *PoolingForward::instanceForTest(EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) {
+STATIC PoolingForward *PoolingForward::instanceForTest(EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) {
     return new PoolingForwardGpuNaive(cl, padZeros, numPlanes, inputSize, poolingSize);
 }
-STATIC PoolingForward *PoolingForward::instanceSpecific(int idx, EasyCL *cl, bool padZeros, int numPlanes, int inputSize, int poolingSize) {
+STATIC PoolingForward *PoolingForward::instanceSpecific(int idx, EasyCL *cl, bool padZeros, int numPlanes, Dimensions inputSize, int poolingSize) {
     if(idx == 0) {
         return new PoolingForwardCpu(cl, padZeros, numPlanes, inputSize, poolingSize);
     }
@@ -67,10 +67,10 @@ VIRTUAL void PoolingForward::forward(int batchSize, float *input, int *selectors
     delete inputWrapper;
 }
 VIRTUAL int PoolingForward::getInputNumElements(int batchSize) {
-    return batchSize * numPlanes * inputSize * inputSize;
+    return batchSize * numPlanes * inputSize.height * inputSize.width;
 }
 VIRTUAL int PoolingForward::getOutputNumElements(int batchSize) {
-    return batchSize * numPlanes * outputSize * outputSize;
+    return batchSize * numPlanes * outputSize.height * outputSize.width;
 }
 
 

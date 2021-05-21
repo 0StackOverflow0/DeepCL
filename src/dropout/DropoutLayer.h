@@ -22,10 +22,10 @@ class MultiplyBuffer;
 class DropoutLayer : public Layer {
 public:
     const int numPlanes;
-    const int inputSize;
+    const Dimensions inputSize;
     const float dropRatio;
 
-    const int outputSize;
+    const Dimensions outputSize;
 
     RandomSingleton *random;
 
@@ -62,7 +62,7 @@ public:
     VIRTUAL float *getOutput();
     VIRTUAL bool needsBackProp();
     VIRTUAL int getOutputNumElements() const;
-    VIRTUAL int getOutputSize() const;
+    VIRTUAL Dimensions getOutputSize() const;
     VIRTUAL int getOutputPlanes() const;
     VIRTUAL int getPersistSize(int version) const;
     VIRTUAL bool providesGradInputWrapper() const;

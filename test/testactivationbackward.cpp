@@ -106,7 +106,7 @@ TEST( testactivationbackward, basic_2plane_batchsize2 ) {
 }
 
 TEST( SLOW_testactivationbackward, compare_args ) {
-    int inputSize = 9;
+    Dimensions inputSize(9);
     std::string activation = "relu";
     int instance0 = 0;
     int instance1 = 1;
@@ -118,7 +118,8 @@ TEST( SLOW_testactivationbackward, compare_args ) {
     TestArgsParser::arg( "activation", &activation );
 //    TestArgsParser::arg( "activationsize", &activationSize );
     TestArgsParser::arg( "numplanes", &numPlanes );
-    TestArgsParser::arg( "inputimagesize", &inputSize );
+    TestArgsParser::arg( "inputimageheight", &inputSize.height );
+    TestArgsParser::arg( "inputimagewidth", &inputSize.width );
     TestArgsParser::arg( "instance0", &instance0 );
     TestArgsParser::arg( "instance1", &instance1 );
     TestArgsParser::go();
@@ -126,10 +127,10 @@ TEST( SLOW_testactivationbackward, compare_args ) {
     EasyCL *cl = DeepCLGtestGlobals_createEasyCL();
     ActivationBackward *p0 = ActivationBackward::instanceSpecific( instance0, cl, numPlanes, inputSize, ActivationFunction::fromName( activation ) );
     ActivationBackward *p1 = ActivationBackward::instanceSpecific( instance1, cl, numPlanes, inputSize, ActivationFunction::fromName( activation ) );
-    int outputSize = p1->outputSize;
-    int gradOutputNumElements = batchSize * outputSize * outputSize * numPlanes;
+    Dimensions outputSize = p1->outputSize;
+    int gradOutputNumElements = batchSize * outputSize.height * outputSize.width * numPlanes;
     float *gradOutput = new float[ gradOutputNumElements ];
-    int inputNumElements = batchSize * inputSize * inputSize * numPlanes;
+    int inputNumElements = batchSize * inputSize.height * inputSize.width * numPlanes;
     float *gradInput0 = new float[ inputNumElements ];
     float *gradInput1 = new float[ inputNumElements ];
     
