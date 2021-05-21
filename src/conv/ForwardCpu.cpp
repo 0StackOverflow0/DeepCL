@@ -49,14 +49,14 @@ VIRTUAL float *ForwardCpu::forward(int batchSize, float *inputData, float *weigh
                     float sum = 0;
                     for(int inPlane = 0; inPlane < dim.inputPlanes; inPlane++) {
 //                        cout << "inplane=" << inPlane << endl;
-                        for(int u = -dim.halfFilterSize; u <= dim.halfFilterSize; u++) {
+                        for(int u = -dim.halfFilterSize; u <= dim.halfFilterSize - dim.isEven; u++) {
                             int inRow = outRow * (dim.skip + 1) + u + (dim.padZeros ? 0 : dim.halfFilterSize);
 //                                cout << "candidate inRow " << inRow << endl;
                             if(inRow < 0 || inRow > dim.inputSize - 1) {
                                 continue;
                             }
                             int filterRow = u + dim.halfFilterSize;
-                            for(int v = -dim.halfFilterSize; v <= dim.halfFilterSize; v++) {
+                            for(int v = -dim.halfFilterSize; v <= dim.halfFilterSize - dim.isEven; v++) {
                                 int inCol = outCol * (dim.skip + 1) + v + (dim.padZeros ? 0 : dim.halfFilterSize);
                                 int filterCol = v + dim.halfFilterSize;
                                 if(inCol < 0 || inCol > dim.inputSize - 1) {
