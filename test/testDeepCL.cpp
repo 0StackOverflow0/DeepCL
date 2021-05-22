@@ -203,16 +203,16 @@ auto train(vector<int>& testLabels, vector<int>& trainLabels, vector<float>& tes
 }
 
 void save(vector<int> &trainLabels, vector<int> &testLabels, vector<float> &trainData, vector<float> &testData) {
-    ofstream trainL("..\\data\\uci_har\\trainLabels.dat", fstream::out | fstream::binary);
+    ofstream trainL("trainLabels.dat", fstream::out | fstream::binary);
     trainL.write(reinterpret_cast<char*>(trainLabels.data()), trainLabels.size() * sizeof(int));
 
-    ofstream testL("..\\data\\uci_har\\testLabels.dat", fstream::out | fstream::binary);
+    ofstream testL("testLabels.dat", fstream::out | fstream::binary);
     testL.write(reinterpret_cast<char*>(testLabels.data()), testLabels.size() * sizeof(int));
 
-    ofstream trainD("..\\data\\uci_har\\trainData.dat", fstream::out | fstream::binary);
+    ofstream trainD("trainData.dat", fstream::out | fstream::binary);
     trainD.write(reinterpret_cast<char*>(trainData.data()), trainData.size() * sizeof(float));
 
-    ofstream testD("..\\data\\uci_har\\testData.dat", fstream::out | fstream::binary);
+    ofstream testD("testData.dat", fstream::out | fstream::binary);
     testD.write(reinterpret_cast<char*>(testData.data()), testData.size() * sizeof(float));
 
     trainL.close();
@@ -233,28 +233,28 @@ auto readFresh() {
 auto readSaved() {
     size_t filesize = 0;
 
-    ifstream trainL("..\\data\\uci_har\\trainLabels.dat", fstream::in | fstream::binary | fstream::ate);
+    ifstream trainL("trainLabels.dat", fstream::in | fstream::binary | fstream::ate);
     filesize = trainL.tellg();
     vector<int> trainLabels(filesize / sizeof(int));
     trainL.seekg(0);
     trainL.read(reinterpret_cast<char*>(trainLabels.data()), filesize);
     trainL.close();
 
-    ifstream testL("..\\data\\uci_har\\testLabels.dat", fstream::in | fstream::binary | fstream::ate);
+    ifstream testL("testLabels.dat", fstream::in | fstream::binary | fstream::ate);
     filesize = testL.tellg();
     vector<int> testLabels(filesize / sizeof(int));
     testL.seekg(0);
     testL.read(reinterpret_cast<char*>(testLabels.data()), filesize);
     testL.close();
 
-    ifstream trainD("..\\data\\uci_har\\trainData.dat", fstream::in | fstream::binary | fstream::ate);
+    ifstream trainD("trainData.dat", fstream::in | fstream::binary | fstream::ate);
     filesize = trainD.tellg();
     vector<float> trainData(filesize / sizeof(float));
     trainD.seekg(0);
     trainD.read(reinterpret_cast<char*>(trainData.data()), filesize);
     trainD.close();
 
-    ifstream testD("..\\data\\uci_har\\testData.dat", fstream::in | fstream::binary | fstream::ate);
+    ifstream testD("testData.dat", fstream::in | fstream::binary | fstream::ate);
     filesize = testD.tellg();
     vector<float> testData(filesize / sizeof(float));
     testD.seekg(0);
@@ -276,7 +276,7 @@ void process() {
 }
 
 TEST(testDeepCL, uci_har) {
-    process();
+    //process();
 
     auto tuple = readSaved();
 
