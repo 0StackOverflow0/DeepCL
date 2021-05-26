@@ -12,6 +12,8 @@
 #include "net/Trainable.h"
 #include "util/Timer.h"
 #include "batch/Batcher.h"
+#include "batch/Batcher2.h"
+#include "batch/NetAction2.h"
 
 #define VIRTUAL virtual
 #define STATIC static
@@ -34,10 +36,15 @@ class Trainer;
 /// can load in a chunk of data from datafiles at a time
 PUBLICAPI
 class DeepCL_EXPORT NetLearner : public NetLearnerBase {
+private:
+    InputData* trainData;
+    InputData* testData;
+    OutputData* trainLabels;
+    OutputData* testLabels;
 public:
     Trainable *net;
-    LearnBatcher *trainBatcher;
-    ForwardBatcher *testBatcher;
+    LearnBatcher2 *trainBatcher;
+    ForwardBatcher2 *testBatcher;
 
 //    float learningRate;
 //    float annealLearningRate;
@@ -61,6 +68,10 @@ public:
     int Ntrain, float *trainData, int *trainLabels,
     int Ntest, float *testData, int *testLabels,
     int batchSize);
+    PUBLICAPI NetLearner::NetLearner(Trainer* trainer, Trainable* net,
+        int Ntrain, float* trainData, float* trainLabels,
+        int Ntest, float* testData, float* testLabels,
+        int batchSize);
     VIRTUAL ~NetLearner();
     VIRTUAL void setSchedule(int numEpochs);
     VIRTUAL void setDumpTimings(bool dumpTimings);

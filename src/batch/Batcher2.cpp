@@ -38,8 +38,8 @@ VIRTUAL Batcher2::~Batcher2() {
 /// \brief reset to the first batch, and set epochDone to false
 void Batcher2::reset() {
     nextBatch = 0;
-//    numRight = 0;
-//    loss = 0;
+    epochNumRight = 0;
+    epochLoss = 0;
     epochDone = false;
 }
 /// \brief what is the index of the next batch to process?
@@ -101,6 +101,9 @@ bool Batcher2::tick(int epoch) {
 //        std::cout << "thisloss " << thisLoss << " thisnumright " << thisNumRight << std::endl; 
 //    loss += thisLoss;
 //    numRight += thisNumRight;
+    epochLoss += action->getEpochLoss();
+    epochNumRight += action->getEpochNumRight();
+    action->reset();
     nextBatch++;
     if(nextBatch == numBatches) {
         epochDone = true;
@@ -130,5 +133,3 @@ void Batcher2::run(int epoch) {
         tick(epoch);
     }
 }
-
-
