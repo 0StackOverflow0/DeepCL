@@ -34,14 +34,18 @@ void NetLearnAction2::run(Trainable *net, int epoch, int batch, InputData *input
 }
 
 void NetForwardAction2::run(Trainable *net, int epoch, int batch, InputData *inputData, OutputData *outputData) {
-//    cout << "NetForwardBatch" << endl;
     net->forward(inputData->inputs);
-//    trainer->train(net, batchData, batchLabels);
+
+    ExpectedData* expected = dynamic_cast<ExpectedData*>(outputData);
+    LabeledData* labeled = dynamic_cast<LabeledData*>(outputData);
+
+    if (expected != 0) {
+        epochLoss += net->calcLoss(expected->expected);
+        //epochNumRight += net->calcNumRight(expected->expected);
+    }
+    else if (labeled != 0) {
+        epochLoss += net->calcLossFromLabels(labeled->labels);
+        epochNumRight += net->calcNumRight(labeled->labels);
+    }
 }
-
-//void NetBackpropAction::run(Trainable *net, InputData *inputData, OutputData *outputData) {
-////    cout << "NetBackpropBatch learningrate=" << learningRate << endl;
-//    net->backwardFromLabels(learningRate, batchLabels);
-//}
-
 

@@ -41,6 +41,8 @@ protected:
 
     bool epochDone;
     int nextBatch;
+    float epochLoss;
+    int epochNumRight;
 
 public:
     // [[[cog
@@ -61,6 +63,18 @@ public:
     VIRTUAL void internalTick(int epoch, InputData *inputData, OutputData *outputData);
     void run(int epoch);
 
+    void setBatchState(int nextBatch, int numRight, float loss) {
+        this->nextBatch = nextBatch;
+        this->epochNumRight = numRight;
+        this->epochLoss = loss;
+    }
+
+    float getEpochLoss() const {
+        return epochLoss;
+    }
+    int getEpochNumRight() const {
+        return epochNumRight;
+    }
     // [[[end]]]
 };
 
@@ -68,27 +82,23 @@ class DeepCL_EXPORT LearnBatcher2 : public Batcher2 {
 public:
     NetLearnAction2 action;
 
-    float epochLoss;
-    int epochNumRight;
-
     LearnBatcher2(Trainable *net, Trainer *trainer, int batchSize, int N,
             InputData *inputData, OutputData *outputData) :
         Batcher2(net, &action, batchSize, N, inputData, outputData),
         action(trainer) {        
     }
-    void setBatchState(int nextBatch, int numRight, float loss) {
-        this->nextBatch = nextBatch;
-        this->epochNumRight = numRight;
-        this->epochLoss = loss;
-    }
     ~LearnBatcher2() {
-    }
-    float getEpochLoss() {
-        return epochLoss;
-    }
-    int getEpochNumRight() {
-        return epochNumRight;
     }
 };
 
+class DeepCL_EXPORT ForwardBatcher2 : public Batcher2 {
+public:
+    NetForwardAction2 action;
 
+    ForwardBatcher2(Trainable* net, int batchSize, int N,
+        InputData* inputData, OutputData* outputData) :
+        Batcher2(net, &action, batchSize, N, inputData, outputData) {
+    }
+    ~ForwardBatcher2() {
+    }
+};
