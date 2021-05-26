@@ -102,7 +102,7 @@ VIRTUAL void BackwardCpu::backward(int batchSize,
          (float *)gradOutputWrapper->getHostArray(), (float *)weightsWrapper->getHostArray());
     float *gradInputHostArray = (float*)gradInputWrapper->getHostArray();
     const int gradInputWrapperSize = gradInputWrapper->size();
-    for(int i = 0; i < gradInputWrapperSize; i++) {
+    for(int i = 0; i < batchSize * dim.inputCubeSize; i++) { //gradInputWrapperSize
         gradInputHostArray[i] = gradInput[i];
     }
     gradInputWrapper->copyToDevice();
